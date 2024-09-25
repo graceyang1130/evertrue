@@ -109,6 +109,82 @@ def doitall(b_34down, desired_down):
 
 
 
+def doitall2(b_34down, desired_down):
+    # Filter for only 3rd and 4th downs
+    b_34down = b_34down[b_34down["pff_DOWN"] == desired_down]
+
+    # Categorize distances into short, medium, and long
+    b_34down['distance_category'] = pd.cut(b_34down['pff_DISTANCE'],
+                                           bins=[0, 3, 6, np.inf],
+                                           labels=['Short (1-3)', 'Medium (4-6)', 'Long (7+)'])
+
+    # Filter pass, run, and scramble plays
+    pass_plays = b_34down[b_34down["pff_RUNPASS"] == "P"]
+    run_plays = b_34down[(b_34down["pff_RUNPASS"] == "R") & (b_34down["pff_QBSCRAMBLE"] == 'N')]
+    scramble_plays = b_34down[(b_34down["pff_RUNPASS"] == "R") & (b_34down["pff_QBSCRAMBLE"] != 'N')]
+
+    # Initialize success rate lists for short, medium, and long distances
+    success_rates_pass = []
+    success_rates_run = []
+    success_rates_scramble = []
+
+    # Loop through the distance categories
+    for category in ['Short (1-3)', 'Medium (4-6)', 'Long (7+)']:
+        # Filter plays by distance category
+        plays_at_category_pass = pass_plays[pass_plays['distance_category'] == category]
+        plays_at_category_run = run_plays[run_plays['distance_category'] == category]
+        plays_at_category_scramble = scramble_plays[scramble_plays['distance_category'] == category]
+
+        # Calculate successful plays
+        successful_plays_pass = plays_at_category_pass[plays_at_category_pass["pff_FIRST_DOWN_GAINED"] == 1]
+        successful_plays_run = plays_at_category_run[plays_at_category_run["pff_FIRST_DOWN_GAINED"] == 1]
+        successful_plays_scramble = plays_at_category_scramble[plays_at_category_scramble["pff_FIRST_DOWN_GAINED"] == 1]
+
+        # Calculate total plays for the category
+        total_plays_pass = len(plays_at_category_pass)
+        total_plays_run = len(plays_at_category_run)
+        total_plays_scramble = len(plays_at_category_scramble)
+
+        # Calculate success rates
+        success_rate_pass = len(successful_plays_pass) / total_plays_pass if total_plays_pass > 0 else 0
+        success_rate_run = len(successful_plays_run) / total_plays_run if total_plays_run > 0 else 0
+        success_rate_scramble = len(successful_plays_scramble) / total_plays_scramble if total_plays_scramble > 0 else 0
+
+        # Append success rates for each category
+        success_rates_pass.append(success_rate_pass)
+        success_rates_run.append(success_rate_run)
+        success_rates_scramble.append(success_rate_scramble)
+
+    # Define the x-axis labels and bar width
+    categories = ['Short (1-3)', 'Medium (4-6)', 'Long (7+)']
+    bar_width = 0.25  # Width of each bar
+    index = np.arange(len(categories))  # X-axis positions for the bars
+
+    # Plot the bars for pass, run, and scramble success rates
+    plt.figure(figsize=(10, 6))
+
+    # Pass success rates bars
+    plt.bar(index, success_rates_pass, bar_width, label='Pass Success Rate', color='blue')
+
+    # Run success rates bars
+    plt.bar(index + bar_width, success_rates_run, bar_width, label='Run Success Rate', color='green')
+
+    # Scramble success rates bars
+    plt.bar(index + 2 * bar_width, success_rates_scramble, bar_width, label='Scramble Success Rate', color='orange')
+
+    # Adding labels and formatting
+    plt.xlabel('Distance Category')
+    plt.ylabel('Success Rate')
+    plt.title('Opponent Success Rates by Distance Category')
+    plt.xticks(index + bar_width, categories)
+    plt.legend()
+    plt.grid(True)
+
+    # Show plot
+    plt.tight_layout()
+    plt.show()
+
+
 
 
 
