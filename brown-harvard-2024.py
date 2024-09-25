@@ -4,11 +4,16 @@ import numpy as np
 
 #Load the data
 b_off = pd.read_csv("brown.csv")
+h_def = pd.read_csv("harvard_def.csv")
+
+doitall(clean_data(b_off), 3)
+doitall(clean_data(h_def), 3)
 
 def clean_data(unclean):
     clean = unclean[["pff_DOWN", "pff_DISTANCE", "pff_QBSCRAMBLE", "pff_RUNPASS", "pff_FIRST_DOWN_GAINED"]]
     clean["pff_FIRST_DOWN_GAINED"].fillna(0, inplace=True)
     clean["pff_QBSCRAMBLE"].fillna('N', inplace=True)
+    return clean
 
 def doitall(b_34down, desired_down):
     #Filter pass, run, and scramble plays
@@ -112,4 +117,4 @@ def doitall(b_34down, desired_down):
 
 #3a: PASS: A graph for short (1-3 yards), medium (4-6), and long (7+) opponent success rate against Harvard for 3rd and 4th downs
 
-#3b: RUN: A graph for short (1-3 yards), medium (4-6), and long (7+) opponent success rate against Harvard for 3rd and 4th downs pass excl. pff_QBSCRAMLBLE
+#3b: RUN: A graph for short (1-3 yards), medium (4-6), and long (7+) opponent success rate against Harvard for 3rd and 4th downs pass
