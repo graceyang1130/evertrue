@@ -5,12 +5,10 @@ import numpy as np
 # 1. Load the data
 b_off = pd.read_csv("brown.csv")
 
-# 2. Select specific columns
-b_34down = b_off[["pff_DOWN", "pff_DISTANCE", "pff_QBSCRAMBLE", "pff_RUNPASS", "pff_FIRST_DOWN_GAINED"]]
-
-# 3. Fill empty columns with 0 for first down gained
-b_34down["pff_FIRST_DOWN_GAINED"].fillna(0, inplace=True)
-b_34down["pff_QBSCRAMBLE"].fillna('N', inplace=True)
+def clean_data(unclean):
+    clean = unclean[["pff_DOWN", "pff_DISTANCE", "pff_QBSCRAMBLE", "pff_RUNPASS", "pff_FIRST_DOWN_GAINED"]]
+    clean["pff_FIRST_DOWN_GAINED"].fillna(0, inplace=True)
+    clean["pff_QBSCRAMBLE"].fillna('N', inplace=True)
 
 def doitall(b_34down, desired_down):
     # 4. Filter pass, run, and scramble plays
