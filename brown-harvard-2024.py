@@ -12,9 +12,9 @@ b_34down["pff_QBSCRAMBLE"].fillna('N', inplace=True)
 #for run, pass, filter by distance, plot average success rate
 #3rd
 
-pass_plays = b_off[b_off["pff_RUNPASS"] == "P"]
-run_plays = b_off[(b_off["pff_RUNPASS"] == "R") & (b_off["pff_QBSCRAMBLE"] == 'N')]
-scramble_plays = b_off[(b_off["pff_RUNPASS"] == "R") & (b_off["pff_QBSCRAMBLE"] != 'N')]
+pass_plays = b_34down[b_34down["pff_RUNPASS"] == "P"]
+run_plays = b_34down[(b_34down["pff_RUNPASS"] == "R") & (b_34down["pff_QBSCRAMBLE"] == 'N')]
+scramble_plays = b_34down[(b_34down["pff_RUNPASS"] == "R") & (b_34down["pff_QBSCRAMBLE"] != 'N')]
 success_rates_pass = []
 success_rates_run = []
 success_rates_scramble = []
@@ -22,8 +22,8 @@ success_rates_scramble = []
 for distance in range(1, 11):
     #for each distance, get plays
     plays_at_distance_pass = pass_plays[pass_plays["pff_DISTANCE"] == distance]
-    plays_at_distance_run = pass_plays[run["pff_DISTANCE"] == distance]
-    plays_at_distance_scramble = pass_plays[scramble_plays["pff_DISTANCE"] == distance]
+    plays_at_distance_run = run_plays[run_plays["pff_DISTANCE"] == distance]
+    plays_at_distance_scramble = scramble_plays[scramble_plays["pff_DISTANCE"] == distance]
 
     #number of successful plays
     successful_plays_pass = plays_at_distance_pass[plays_at_distance_pass["pff_FIRST_DOWN_GAINED"] == 1]
@@ -73,7 +73,7 @@ plt.show()
 
 #2. A graph of opponents success rate for each distance of 3rd/4th downs against Harvard.
 h_def = pd.read_csv("harvard_def.csv")
-h_34down = b_off["pff_DOWN", "pff_DISTANCE", "pff_FIRST_DOWN_GAINED", "pff_QBSCRAMBLE", "pff_RUNPASS"] # Could also be interesting to split PASS/RUN success
+h_34down = b_34down["pff_DOWN", "pff_DISTANCE", "pff_FIRST_DOWN_GAINED", "pff_QBSCRAMBLE", "pff_RUNPASS"] # Could also be interesting to split PASS/RUN success
 
 
 
