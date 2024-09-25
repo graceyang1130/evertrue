@@ -3,11 +3,29 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 #Load the data
-b_off = pd.read_csv("brown.csv")
-h_def = pd.read_csv("harvard_def.csv")
 
-doitall(clean_data(b_off), 3)
-doitall(clean_data(h_def), 3)
+def run_all_plots():
+	b_off = pd.read_csv("brown.csv")
+	h_def = pd.read_csv("harvard_def.csv")
+
+	brown_off = clean_data(b_off)
+	harvard_def = clean_data(h_def)
+
+	playcall_by_distance(brown_off, 3)
+	playcall_by_distance(brown_off, 4)
+
+	playcall_success_by_distance(brown_off, 3)
+	playcall_success_by_distance(brown_off, 4)
+
+	playcall_by_distance(harvard_def, 3, "Harvard Defense")
+	playcall_by_distance(harvard_def, 4, "Harvard Defense")
+
+	playcall_success_by_distance(harvard_def, 3, "Harvard Defense")
+	playcall_success_by_distance(harvard_def, 4, "Harvard Defense")
+
+	playcall_success_by_distance_category(harvard_def, 4, "Harvard Defense")
+	playcall_success_by_distance_category(harvard_def, 4, "Harvard Defense")
+
 
 def clean_data(unclean):
     clean = unclean[["pff_DOWN", "pff_DISTANCE", "pff_QBSCRAMBLE", "pff_RUNPASS", "pff_FIRST_DOWN_GAINED"]]
@@ -15,11 +33,83 @@ def clean_data(unclean):
     clean["pff_QBSCRAMBLE"].fillna('N', inplace=True)
     return clean
 
-def doitall(b_34down, desired_down):
+def playcall_by_distance(df, desired_down, school = "Brown Offense"):
     #Filter pass, run, and scramble plays
-    pass_plays = b_34down[(b_34down["pff_RUNPASS"] == "P") & (b_34down["pff_DOWN"] == desired_down)]
-    run_plays = b_34down[(b_34down["pff_RUNPASS"] == "R") & (b_34down["pff_QBSCRAMBLE"] == 'N') & (b_34down["pff_DOWN"] == desired_down)]
-    scramble_plays = b_34down[(b_34down["pff_RUNPASS"] == "R") & (b_34down["pff_QBSCRAMBLE"] != 'N') & (b_34down["pff_DOWN"] == desired_down)]
+    pass_plays = df[(df["pff_RUNPASS"] == "P") & (df["pff_QBSCRAMBLE"] == 'N') & (df["pff_DOWN"] == desired_down)]
+    run_plays = df[(df["pff_RUNPASS"] == "R") & (df["pff_QBSCRAMBLE"] == 'N') & (df["pff_DOWN"] == desired_down)]
+    scramble_plays = df[(df["pff_QBSCRAMBLE"] != 'N') & (df["pff_DOWN"] == desired_down)]
+
+    #Initialize success rate lists
+    rates_pass = []
+    rates_run = []
+    rates_scramble = []
+
+    #Loop through distances from 1 to 10
+    for distance in range(1, 15):
+        #Filter the plays with the current distance
+        plays_at_distance_pass = pass_plays[pass_plays["pff_DISTANCE"] == distance]
+        plays_at_distance_run = run_plays[run_plays["pff_DISTANCE"] == distance]
+        plays_at_distance_scramble = scramble_plays[scramble_plays["pff_DISTANCE"] == distance]
+
+        pass_num = len(plays_at_distance_pass)
+        run_num = len(plays_at_distance_run)
+        scramble_num = len(plays_at_distance_scramble)
+
+        #Append success rates
+        rates_pass.append(pass_num)
+        rates_run.append(run_num)
+        rates_scramble.append(scramble_num)
+
+    #Handle distances of 11+ yards
+    plays_at_distance_11plus_pass = pass_plays[pass_plays["pff_DISTANCE"] >= 15]
+    plays_at_distance_11plus_run = run_plays[run_plays["pff_DISTANCE"] >= 15]
+    plays_at_distance_11plus_scramble = scramble_plays[scramble_plays["pff_DISTANCE"] >= 15]
+
+    pass_11plus_num = len(plays_at_distance_11plus_pass)
+    run_11plus_num = len(plays_at_distance_11plus_run)
+    scramble_11plus_num = len(plays_at_distance_11plus_scramble)
+
+    #Append success rates for 11+ yards
+    rates_pass.append(pass_11plus_num)
+    rates_run.append(run_11plus_num)
+    rates_scramble.append(scramble_11plus_num)
+
+    #Define the x-axis positions and bar width
+    distances = list(range(1, 15)) + ['15+']
+    bar_width = 0.25  # Width of each bar
+    index = np.arange(len(distances))
+
+    #Plot the bars for pass, run, and scramble success rates
+    plt.figure(figsize=(10, 6))
+
+    #Pass bars
+    plt.bar(index, rates_pass, bar_width, label='Pass Plays', color='blue')
+
+    #Run bars
+    plt.bar(index + bar_width, rates_run, bar_width, label='Run Plays', color='green')
+
+    #Scramble bars
+    plt.bar(index + 2 * bar_width, rates_scramble, bar_width, label='Scramble Plays', color='orange')
+
+    #Adding labels and formatting
+    plt.xlabel('Distance (Yards)')
+    plt.ylabel('# of Plays')
+    plt.title(school + ': # of Plays for Pass, Run, and QB Scramble by Distance (1-14 and 15+ Yards), Down #' + str(desired_down))
+    plt.xticks(index + bar_width, distances)
+    plt.legend()
+    plt.grid(True)
+
+    plt.savefig(school + " " + str(desired_down) + ' Down Plays.png')
+
+    #Show plot
+    plt.tight_layout()
+    plt.show()
+
+def playcall_success_by_distance(df, desired_down, school = "Brown Offense"):
+    #Filter pass, run, and scramble plays
+    pass_plays = df[(df["pff_RUNPASS"] == "P") & (df["pff_QBSCRAMBLE"] == 'N') & (df["pff_DOWN"] == desired_down)]
+    run_plays = df[(df["pff_RUNPASS"] == "R") & (df["pff_QBSCRAMBLE"] == 'N') & (df["pff_DOWN"] == desired_down)]
+    scramble_plays = df[(df["pff_QBSCRAMBLE"] != 'N') & (df["pff_DOWN"] == desired_down)]
 
     #Initialize success rate lists
     success_rates_pass = []
@@ -98,10 +188,12 @@ def doitall(b_34down, desired_down):
     #Adding labels and formatting
     plt.xlabel('Distance (Yards)')
     plt.ylabel('Success Rate')
-    plt.title('Success Rates for Pass, Run, and QB Scramble by Distance (1-10 and 11+ Yards)')
+    plt.title(school + ': Success Rates for Pass, Run, and QB Scramble by Distance (1-10 and 11+ Yards), Down #' + str(desired_down))
     plt.xticks(index + bar_width, distances)
     plt.legend()
     plt.grid(True)
+
+    plt.savefig(school + " " + str(desired_down) + ' Down Success.png')
 
     #Show plot
     plt.tight_layout()
@@ -109,19 +201,19 @@ def doitall(b_34down, desired_down):
 
 
 
-def doitall2(b_34down, desired_down):
+def playcall_success_by_distance_category(df, desired_down, school):
     # Filter for only 3rd and 4th downs
-    b_34down = b_34down[b_34down["pff_DOWN"] == desired_down]
+    df = df[df["pff_DOWN"] == desired_down]
 
     # Categorize distances into short, medium, and long
-    b_34down['distance_category'] = pd.cut(b_34down['pff_DISTANCE'],
+    df['distance_category'] = pd.cut(df['pff_DISTANCE'],
                                            bins=[0, 3, 6, np.inf],
                                            labels=['Short (1-3)', 'Medium (4-6)', 'Long (7+)'])
 
     # Filter pass, run, and scramble plays
-    pass_plays = b_34down[b_34down["pff_RUNPASS"] == "P"]
-    run_plays = b_34down[(b_34down["pff_RUNPASS"] == "R") & (b_34down["pff_QBSCRAMBLE"] == 'N')]
-    scramble_plays = b_34down[(b_34down["pff_RUNPASS"] == "R") & (b_34down["pff_QBSCRAMBLE"] != 'N')]
+    pass_plays = df[(df["pff_RUNPASS"] == "P") & (df["pff_QBSCRAMBLE"] == 'N') & (df["pff_DOWN"] == desired_down)]
+    run_plays = df[(df["pff_RUNPASS"] == "R") & (df["pff_QBSCRAMBLE"] == 'N') & (df["pff_DOWN"] == desired_down)]
+    scramble_plays = df[(df["pff_QBSCRAMBLE"] != 'N') & (df["pff_DOWN"] == desired_down)]
 
     # Initialize success rate lists for short, medium, and long distances
     success_rates_pass = []
@@ -175,10 +267,12 @@ def doitall2(b_34down, desired_down):
     # Adding labels and formatting
     plt.xlabel('Distance Category')
     plt.ylabel('Success Rate')
-    plt.title('Opponent Success Rates by Distance Category')
+    plt.title(school + ': Success Rates by Distance Category, Down #' + str(desired_down))
     plt.xticks(index + bar_width, categories)
     plt.legend()
     plt.grid(True)
+
+    plt.savefig(school + " " + str(desired_down) + ' Down Success by Categories.png')
 
     # Show plot
     plt.tight_layout()
