@@ -24,24 +24,38 @@ def plot_punts_every_yardline():
     # Rename columns for clarity
     avg_punt_distance_by_yardline.columns = ['Yardline', 'Average Net Punt Distance']
 
-    # Create custom sorting order:
-    # - 0 first
-    # - Negative yardlines in decreasing order (-10, -20, -30, ...)
-    # - Positive yardlines in decreasing order (50, 49, 48, ...)
-    sorted_yardlines = sorted(avg_punt_distance_by_yardline['Yardline'], key=lambda x: (x > 0, -x))
+    # Apply football reciprocal transformation to negative yardlines (e.g., -49 becomes 51)
+    avg_punt_distance_by_yardline['Yardline'] = avg_punt_distance_by_yardline['Yardline'].apply(lambda x: 100 + x if x < 0 else x)
 
-    # Re-order the DataFrame based on this custom order
-    avg_punt_distance_by_yardline = avg_punt_distance_by_yardline.set_index('Yardline').loc[sorted_yardlines].reset_index()
+    # Define the full range of yardlines (from 1 to 100)
+    all_yardlines = pd.DataFrame({'Yardline': range(1, 101)})
+
+    # Merge the existing data with the full yardline range, filling missing values with NaN
+    avg_punt_distance_by_yardline = pd.merge(all_yardlines, avg_punt_distance_by_yardline, on='Yardline', how='left')
+
+    # Sort the yardlines to ensure proper order
+    avg_punt_distance_by_yardline = avg_punt_distance_by_yardline.sort_values(by='Yardline')
 
     # Plot the data as a bar graph
     plt.figure(figsize=(10, 6))
-    plt.bar(avg_punt_distance_by_yardline['Yardline'], avg_punt_distance_by_yardline['Average Net Punt Distance'], color='skyblue')
-    plt.title('Average Net Punt Distance by Yardline')
-    plt.xlabel('Yardline')
+    plt.bar(avg_punt_distance_by_yardline['Yardline'], avg_punt_distance_by_yardline['Average Net Punt Distance'].fillna(0), color='skyblue')
+    plt.title('Average Net Punt Distance by Football Reciprocal Yardline (No Data Below 31)')
+    plt.xlabel('Football Reciprocal Yardline')
     plt.ylabel('Average Net Punt Distance')
     plt.grid(True, axis='y')  # Add gridlines on y-axis for readability
     plt.xticks(rotation=90)  # Rotate x-ticks for better readability
+
+    # Mark the areas with no data
+    plt.axvspan(1, 30, color='lightgrey', alpha=0.5, label="No Data Below 31")
+
+    # Show the legend to clarify no data region
+    plt.legend()
+
     plt.show()
+
+# Call the function to generate the plot
+plot_punts_every_yardline()
+
 
 
 
