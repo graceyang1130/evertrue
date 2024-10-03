@@ -8,13 +8,13 @@ import numpy as np
 
 def run_all_plots():
     punts = pd.read_csv("punts.csv")
-    punt_data = punts[["pff_DOWN", "pff_DISTANCE", "pff_QBSCRAMBLE", "pff_RUNPASS", "pff_FIRST_DOWN_GAINED"]]
+    punt_data = punts[["pff_FIELDPOSITION", "pff_KICKRESULT", "pff_GAINLOSS"]]
 
     playcall_by_distance(brown_off, 3)
     playcall_by_distance(brown_off, 4)
 
 
-def playcall_by_distance(df, desired_down, school = "Brown Offense"):
+def playcall_by_distance(df, desired_down, school = "Ivy Average"):
     #Filter pass, run, and scramble plays
     pass_plays = df[(df["pff_RUNPASS"] == "P") & (df["pff_QBSCRAMBLE"] == 'N') & (df["pff_DOWN"] == desired_down)]
     run_plays = df[(df["pff_RUNPASS"] == "R") & (df["pff_QBSCRAMBLE"] == 'N') & (df["pff_DOWN"] == desired_down)]
