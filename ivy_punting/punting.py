@@ -40,7 +40,7 @@ def plot_punts_every_yardline():
     plt.figure(figsize=(10, 6))
     plt.bar(avg_punt_distance_by_yardline['Yardline'], avg_punt_distance_by_yardline['Average Net Punt Distance'].fillna(0), color='skyblue')
     plt.title('Ivy League Average Net Punt Distance')
-    plt.xlabel('Football Reciprocal Yardline')
+    plt.xlabel('Yardline')
     plt.ylabel('Average Net Punt Distance')
     plt.grid(True, axis='y')  # Add gridlines on y-axis for readability
     plt.xticks(rotation=90)  # Rotate x-ticks for better readability
