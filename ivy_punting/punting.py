@@ -1,6 +1,6 @@
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 
 #Load the data
 #1. average punt net distance for every yardline
@@ -12,6 +12,37 @@ def run_all_plots():
 
     playcall_by_distance(brown_off, 3)
     playcall_by_distance(brown_off, 4)
+
+
+def plot_punts_every_yardline():
+    # Load your CSV file
+    punts_df = pd.read_csv("punts.csv")
+
+    # Group by yardline (pff_FIELDPOSITION) and calculate the average net gain/loss (pff_GAINLOSSNET)
+    avg_punt_distance_by_yardline = punts_df.groupby('pff_FIELDPOSITION')['pff_GAINLOSSNET'].mean().reset_index()
+
+    # Rename columns for clarity
+    avg_punt_distance_by_yardline.columns = ['Yardline', 'Average Net Punt Distance']
+
+    # Create custom sorting order:
+    # - 0 first
+    # - Negative yardlines in decreasing order (-10, -20, -30, ...)
+    # - Positive yardlines in decreasing order (50, 49, 48, ...)
+    sorted_yardlines = sorted(avg_punt_distance_by_yardline['Yardline'], key=lambda x: (x > 0, -x))
+
+    # Re-order the DataFrame based on this custom order
+    avg_punt_distance_by_yardline = avg_punt_distance_by_yardline.set_index('Yardline').loc[sorted_yardlines].reset_index()
+
+    # Plot the data as a bar graph
+    plt.figure(figsize=(10, 6))
+    plt.bar(avg_punt_distance_by_yardline['Yardline'], avg_punt_distance_by_yardline['Average Net Punt Distance'], color='skyblue')
+    plt.title('Average Net Punt Distance by Yardline')
+    plt.xlabel('Yardline')
+    plt.ylabel('Average Net Punt Distance')
+    plt.grid(True, axis='y')  # Add gridlines on y-axis for readability
+    plt.xticks(rotation=90)  # Rotate x-ticks for better readability
+    plt.show()
+
 
 
 def playcall_by_distance(df, desired_down, school = "Ivy Average"):
