@@ -7,11 +7,11 @@ import numpy as np
 #2. percentage of punts where something bad happens by yardline * negative in the gain loss column or if the punt is blocked*
 
 def run_all_plots():
-	punts = pd.read_csv("punts.csv")
+    punts = pd.read_csv("punts.csv")
     punt_data = punts[["pff_DOWN", "pff_DISTANCE", "pff_QBSCRAMBLE", "pff_RUNPASS", "pff_FIRST_DOWN_GAINED"]]
 
-	playcall_by_distance(brown_off, 3)
-	playcall_by_distance(brown_off, 4)
+    playcall_by_distance(brown_off, 3)
+    playcall_by_distance(brown_off, 4)
 
 
 def playcall_by_distance(df, desired_down, school = "Brown Offense"):
