@@ -5,31 +5,31 @@ import numpy as np
 #Load the data
 
 def run_all_plots():
-    offense = pd.read_csv("c_off.csv")
-    defense = pd.read_csv("c_def.csv")
+    offense = pd.read_csv("penn_off.csv")
+    defense = pd.read_csv("penn_def.csv")
 
     o_clean = clean_data(offense)
     d_clean = clean_data(defense)
 
     #offense
-    playcall_by_distance(o_clean, 3, "Cornell offense")
-    playcall_by_distance(o_clean, 4, "Cornell offense")
+    playcall_by_distance(o_clean, 3, "Penn offense")
+    playcall_by_distance(o_clean, 4, "Penn offense")
 
-    playcall_success_by_distance(o_clean, 3, "Cornell offense")
-    playcall_success_by_distance(o_clean, 4, "Cornell offense")
+    playcall_success_by_distance(o_clean, 3, "Penn offense")
+    playcall_success_by_distance(o_clean, 4, "Penn offense")
 
-    playcall_success_by_distance_category(o_clean, 3, "Cornell offense")
-    playcall_success_by_distance_category(o_clean, 4, "Cornell offense")
+    playcall_success_by_distance_category(o_clean, 3, "Penn offense")
+    playcall_success_by_distance_category(o_clean, 4, "Penn offense")
 
     #defense
-    playcall_by_distance(d_clean, 3, "Cornell defense")
-    playcall_by_distance(d_clean, 4, "Cornell defense")
+    playcall_by_distance(d_clean, 3, "Penn defense")
+    playcall_by_distance(d_clean, 4, "Penn defense")
 
-    playcall_success_by_distance(d_clean, 3, "Cornell defense")
-    playcall_success_by_distance(d_clean, 4, "Cornell defense")
+    playcall_success_by_distance(d_clean, 3, "Penn defense")
+    playcall_success_by_distance(d_clean, 4, "Penn defense")
 
-    playcall_success_by_distance_category(d_clean, 3, "Cornell defense")
-    playcall_success_by_distance_category(d_clean, 4, "Cornell defense")
+    playcall_success_by_distance_category(d_clean, 3, "Penn defense")
+    playcall_success_by_distance_category(d_clean, 4, "Penn defense")
 
 
 def clean_data(unclean):
