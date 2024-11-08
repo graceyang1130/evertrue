@@ -5,34 +5,36 @@ import numpy as np
 #Load the data
 
 def run_all_plots():
-    offense = pd.read_csv("penn_off.csv")
-    defense = pd.read_csv("penn_def.csv")
+    offense = pd.read_csv("yale_offense.csv")
+    defense = pd.read_csv("yale_defense.csv")
 
     o_clean = clean_data(offense)
     d_clean = clean_data(defense)
 
+    school = "Yale"
+
     #offense
-    playcall_by_distance(o_clean, 3, "Penn offense")
-    playcall_by_distance(o_clean, 4, "Penn offense")
-
-    playcall_success_by_distance(o_clean, 3, "Penn offense")
-    playcall_success_by_distance(o_clean, 4, "Penn offense")
-
-    play_percentage_by_distance(o_clean, 3, "Penn offense")
-    play_percentage_by_distance(o_clean, 4, "Penn offense")
-
-    playcall_success_by_distance_category(o_clean, 3, "Penn offense")
-    playcall_success_by_distance_category(o_clean, 4, "Penn offense")
+    #playcall_by_distance(o_clean, 3, school + " offense")
+    #playcall_by_distance(o_clean, 4, school + " offense")
+#
+    #playcall_success_by_distance(o_clean, 3, school + " offense")
+    #playcall_success_by_distance(o_clean, 4, school + " offense")
+#
+    #play_percentage_by_distance(o_clean, 3, school + " offense")
+    #play_percentage_by_distance(o_clean, 4, school + " offense")
+#
+    #playcall_success_by_distance_category(o_clean, 3, school + " offense")
+    #playcall_success_by_distance_category(o_clean, 4, school + " offense")
 
     #defense
-    playcall_by_distance(d_clean, 3, "Penn defense")
-    playcall_by_distance(d_clean, 4, "Penn defense")
+    playcall_by_distance(d_clean, 3, school + " defense")
+    playcall_by_distance(d_clean, 4, school + " defense")
 
-    playcall_success_by_distance(d_clean, 3, "Penn defense")
-    playcall_success_by_distance(d_clean, 4, "Penn defense")
+    playcall_success_by_distance(d_clean, 3, school + " defense")
+    playcall_success_by_distance(d_clean, 4, school + " defense")
 
-    playcall_success_by_distance_category(d_clean, 3, "Penn defense")
-    playcall_success_by_distance_category(d_clean, 4, "Penn defense")
+    playcall_success_by_distance_category(d_clean, 3, school + " defense")
+    playcall_success_by_distance_category(d_clean, 4, school + " defense")
 
 
 def clean_data(unclean):
@@ -99,14 +101,14 @@ def playcall_by_distance(df, desired_down, school="Brown Offense"):
     # Adding labels and formatting
     plt.xlabel('Distance (Yards)')
     plt.ylabel('# of Plays')
-    plt.title(f'{school}: # of Plays for Pass, Run, and QB Scramble by Distance (1-14 and 15+ Yards), Down #{desired_down}')
+    plt.title(f'{school} Down #{desired_down}: # of Plays by Distance')
     plt.xticks(index + bar_width / 2, distances)
     plt.legend()
     plt.grid(axis='y')
 
     # Save and show plot
     plt.tight_layout()
-    plt.savefig(f'{school} Down {desired_down} Plays.png')
+    plt.savefig(f'{school}_{desired_down}_#plays.png')
     plt.show()
 
 def play_percentage_by_distance(df, desired_down, school="Brown Offense"):
@@ -194,14 +196,14 @@ def play_percentage_by_distance(df, desired_down, school="Brown Offense"):
     plt.xlabel('Distance (Yards)')
     plt.ylabel('Percentage of Plays (%)')
     plt.ylim(0, 100)  # Set y-axis limit to 100
-    plt.title(f'{school}: Percentage of Plays for Pass, Run, and QB Scramble by Distance (1-14 and 15+ Yards), Down #{desired_down}')
+    plt.title(f'{school} Down #{desired_down}: % of Plays by Distance')
     plt.xticks(index + bar_width / 2, distances)
     plt.legend()
     plt.grid(axis='y')
 
     # Save and show plot
     plt.tight_layout()
-    plt.savefig(f'{school} Down {desired_down} Play Percentages.png')
+    plt.savefig(f'{school}_{desired_down}_%plays.png')
     plt.show()
 
 def playcall_success_by_distance(df, desired_down, school = "Brown Offense"):
@@ -287,12 +289,12 @@ def playcall_success_by_distance(df, desired_down, school = "Brown Offense"):
     #Adding labels and formatting
     plt.xlabel('Distance (Yards)')
     plt.ylabel('Success Rate')
-    plt.title(school + ': Success Rates for Pass, Run, and QB Scramble by Distance (1-10 and 11+ Yards), Down #' + str(desired_down))
+    plt.title(f'{school} Down #{desired_down}: Conversion % by Distance')
     plt.xticks(index + bar_width, distances)
     plt.legend()
     plt.grid(True)
 
-    plt.savefig(school + " " + str(desired_down) + ' Down Success.png')
+    plt.savefig(f'{school}_{desired_down}_%success.png')
 
     #Show plot
     plt.tight_layout()
@@ -366,12 +368,12 @@ def playcall_success_by_distance_category(df, desired_down, school):
     # Adding labels and formatting
     plt.xlabel('Distance Category')
     plt.ylabel('Success Rate')
-    plt.title(school + ': Success Rates by Distance Category, Down #' + str(desired_down))
+    plt.title(f'{school} Down #{desired_down}: Conversion % by Distance Category')
     plt.xticks(index + bar_width, categories)
     plt.legend()
     plt.grid(True)
 
-    plt.savefig(school + " " + str(desired_down) + ' Down Success by Categories.png')
+    plt.savefig(f'{school}_{desired_down}_%success_category.png')
 
     # Show plot
     plt.tight_layout()
