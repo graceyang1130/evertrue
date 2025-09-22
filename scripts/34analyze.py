@@ -5,7 +5,7 @@ import numpy as np
 #Load the data
 
 #call function with offense and defense datapaths
-def run_all_plots(offense, defense):
+def run_all_plots(offense, defense, school_name):
     offense = pd.read_csv(offense)
     defense = pd.read_csv(defense)
 
@@ -13,24 +13,24 @@ def run_all_plots(offense, defense):
     d_clean = clean_data(defense)
 
     #offense
-    playcall_by_distance(o_clean, 3, "Cornell offense")
-    playcall_by_distance(o_clean, 4, "Cornell offense")
+    playcall_by_distance(o_clean, 3, school_name + " offense")
+    playcall_by_distance(o_clean, 4, school_name + " offense")
 
-    playcall_success_by_distance(o_clean, 3, "Cornell offense")
-    playcall_success_by_distance(o_clean, 4, "Cornell offense")
+    playcall_success_by_distance(o_clean, 3, school_name + " offense")
+    playcall_success_by_distance(o_clean, 4, school_name + " offense")
 
-    playcall_success_by_distance_category(o_clean, 3, "Cornell offense")
-    playcall_success_by_distance_category(o_clean, 4, "Cornell offense")
+    playcall_success_by_distance_category(o_clean, 3, school_name + " offense")
+    playcall_success_by_distance_category(o_clean, 4, school_name + " offense")
 
     #defense
-    playcall_by_distance(d_clean, 3, "Cornell defense")
-    playcall_by_distance(d_clean, 4, "Cornell defense")
+    playcall_by_distance(d_clean, 3, school_name + " defense")
+    playcall_by_distance(d_clean, 4, school_name + " defense")
 
-    playcall_success_by_distance(d_clean, 3, "Cornell defense")
-    playcall_success_by_distance(d_clean, 4, "Cornell defense")
+    playcall_success_by_distance(d_clean, 3, school_name + " defense")
+    playcall_success_by_distance(d_clean, 4, school_name + " defense")
 
-    playcall_success_by_distance_category(d_clean, 3, "Cornell defense")
-    playcall_success_by_distance_category(d_clean, 4, "Cornell defense")
+    playcall_success_by_distance_category(d_clean, 3, school_name + " defense")
+    playcall_success_by_distance_category(d_clean, 4, school_name + " defense")
 
 
 def clean_data(unclean):
