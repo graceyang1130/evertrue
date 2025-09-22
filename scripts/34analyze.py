@@ -4,6 +4,8 @@ import numpy as np
 
 #Load the data
 
+#TODO add a year param (ex filter data based on year)
+
 #call function with offense and defense datapaths
 def run_all_plots(offense, defense, school_name):
     offense = pd.read_csv(offense)
