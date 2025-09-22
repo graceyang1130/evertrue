@@ -4,9 +4,10 @@ import numpy as np
 
 #Load the data
 
-def run_all_plots():
-    offense = pd.read_csv("c_off.csv")
-    defense = pd.read_csv("c_def.csv")
+#call function with offense and defense datapaths
+def run_all_plots(offense, defense):
+    offense = pd.read_csv(offense)
+    defense = pd.read_csv(defense)
 
     o_clean = clean_data(offense)
     d_clean = clean_data(defense)
