@@ -204,8 +204,12 @@ def play_percentage_by_distance(df, desired_down, school="Brown Offense"):
     plt.legend()
     plt.grid(axis='y')
 
-    for i, n in enumerate(counts_total):
-        plt.text(i + bar_width/2, 102, f"n={n}", ha="center", va="bottom", fontsize=8)
+    for i, (p, n) in enumerate(zip(percentages_pass, counts_total)):
+        # Get bar top (stacked pass+scramble, so use sum)
+        bar_height = percentages_pass[i] + percentages_scramble[i]
+        plt.text(i, bar_height + 2, f"n={n}", ha="center", va="bottom", fontsize=8)
+
+
 
     # Save and show plot
     plt.tight_layout()
@@ -303,7 +307,11 @@ def playcall_success_by_distance(df, desired_down, school = "Brown Offense"):
     plt.legend()
     plt.grid(True)
     for i, n in enumerate(total_counts):
-        plt.text(i + bar_width, 1.02, f"n={n}", ha="center", va="bottom", fontsize=8, transform=plt.gca().get_xaxis_transform())
+        max_height = max(success_rates_pass[i],
+                 success_rates_run[i],
+                 success_rates_scramble[i])
+        plt.text(i + bar_width, max_height + 0.02, f"n={n}",
+                ha="center", va="bottom", fontsize=8)
 
     plt.savefig(f'{school}_{desired_down}_%success.png')
 
@@ -389,8 +397,12 @@ def playcall_success_by_distance_category(df, desired_down, school):
     plt.legend()
     plt.grid(True)
     for i, cat in enumerate(categories):
-        plt.text(i + bar_width, 1.02, f"n={int(counts_by_cat.loc[cat])}", ha="center", va="bottom",
-             fontsize=8, transform=plt.gca().get_xaxis_transform())
+        max_height = max(success_rates_pass[i],
+                 success_rates_run[i],
+                 success_rates_scramble[i])
+        plt.text(i + bar_width, max_height + 0.02,
+         f"n={int(counts_by_cat.loc[cat])}",
+         ha="center", va="bottom", fontsize=8)
     
     plt.savefig(f'{school}_{desired_down}_%success_category.png')
 
