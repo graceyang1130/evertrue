@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Optional
 
 # =========================
 # Config
@@ -245,8 +246,8 @@ def run_all_plots(
     offense_csv: str,
     defense_csv: str,
     school_name: str,
-    recent_years: int | None = None,  # e.g., 3 keeps the last 3 seasons present in file
-    min_season: int | None = None,    # e.g., 2022 keeps seasons >= 2022
+    recent_years: Optional[int] = None,  # e.g., 3 keeps the last 3 seasons present in file
+    min_season: Optional[int] = None,    # e.g., 2022 keeps seasons >= 2022
     out_dir: str = OUT_DIR
 ):
     ensure_out_dir(out_dir)
@@ -277,8 +278,8 @@ def run_all_plots(
 if __name__ == "__main__":
     # Update these paths to your actual CSVs
     run_all_plots(
-        offense_csv="../../data/2025/harvard/harvard_offense.csv",
-        defense_csv="../../data/2025/harvard/harvard_defense.csv",
+        offense_csv="harvard_offense.csv",
+        defense_csv="harvard_defense.csv",
         school_name="Harvard",
         # choose one or both:
         recent_years=None,  # e.g., 3
