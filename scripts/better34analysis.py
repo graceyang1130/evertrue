@@ -397,3 +397,6 @@ def playcall_success_by_distance_category(df, desired_down, school):
     # Show plot
     plt.tight_layout()
     plt.show()
+
+if __name__ == "__main__":
+    run_all_plots()
