@@ -38,9 +38,9 @@ def run_all_plots():
 
 
 def clean_data(unclean):
-    clean = unclean[["pff_DOWN", "pff_DISTANCE", "pff_QBSCRAMBLE", "pff_RUNPASS", "pff_FIRST_DOWN_GAINED"]]
-    clean["pff_FIRST_DOWN_GAINED"].fillna(0, inplace=True)
-    clean["pff_QBSCRAMBLE"].fillna('N', inplace=True)
+    clean = unclean[["pff_DOWN", "pff_DISTANCE", "pff_QBSCRAMBLE", "pff_RUNPASS", "pff_FIRST_DOWN_GAINED"]].copy()
+    clean["pff_FIRST_DOWN_GAINED"] = clean["pff_FIRST_DOWN_GAINED"].fillna(0)
+    clean["pff_QBSCRAMBLE"] = clean["pff_QBSCRAMBLE"].fillna('N')
     return clean
 
 def playcall_by_distance(df, desired_down, school="Brown Offense"):
@@ -261,7 +261,6 @@ def playcall_success_by_distance(df, desired_down, school = "Brown Offense"):
     successful_plays_11plus_pass = plays_at_distance_11plus_pass[plays_at_distance_11plus_pass["pff_FIRST_DOWN_GAINED"] == 1]
     successful_plays_11plus_run = plays_at_distance_11plus_run[plays_at_distance_11plus_run["pff_FIRST_DOWN_GAINED"] == 1]
     successful_plays_11plus_scramble = plays_at_distance_11plus_scramble[plays_at_distance_11plus_scramble["pff_FIRST_DOWN_GAINED"] == 1]
-    total_counts.append(total_plays_11plus_pass + total_plays_11plus_run + total_plays_11plus_scramble)
 
     #Calculate the total number of plays for 11+ yards
     total_plays_11plus_pass = len(plays_at_distance_11plus_pass)
@@ -277,6 +276,7 @@ def playcall_success_by_distance(df, desired_down, school = "Brown Offense"):
     success_rates_pass.append(success_rate_11plus_pass)
     success_rates_run.append(success_rate_11plus_run)
     success_rates_scramble.append(success_rate_11plus_scramble)
+    total_counts.append(total_plays_11plus_pass + total_plays_11plus_run + total_plays_11plus_scramble)
 
     #Define the x-axis positions and bar width
     distances = list(range(1, 11)) + ['11+']
@@ -397,3 +397,6 @@ def playcall_success_by_distance_category(df, desired_down, school):
     # Show plot
     plt.tight_layout()
     plt.show()
+
+if __name__ == "__main__":
+    run_all_plots()
