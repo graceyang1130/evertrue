@@ -96,3 +96,58 @@ def test_load_drives_needs_td_when_trailing_by_more_than_three(synthetic_csv):
 def test_load_drives_yards_to_goal_converted(synthetic_csv):
     drives = load_drives(synthetic_csv, quarter=4)
     assert (drives.yards_to_goal == 75.0).all()
+
+
+import numpy as np
+
+from opp_offense import FEATURE_NAMES, design_matrix, fit
+
+
+@pytest.fixture
+def real_drives():
+    """Real Q4 drives. The model needs genuine covariance to fit sensibly."""
+    return load_drives("ivy_19t26.csv")
+
+
+def test_design_matrix_shape_and_order(real_drives):
+    matrix = design_matrix(real_drives.head(10))
+    assert matrix.shape == (10, len(FEATURE_NAMES))
+    assert FEATURE_NAMES == ["log_seconds", "ep_start", "timeouts", "needs_td"]
+
+
+def test_design_matrix_has_no_nan_or_inf(real_drives):
+    matrix = design_matrix(real_drives)
+    assert np.isfinite(matrix).all()
+
+
+def test_predict_returns_probabilities_that_sum_correctly(real_drives):
+    model = fit(real_drives)
+    out = model.predict(seconds_left=120, ep_start=0.5, timeouts=2, needs_td=1)
+    assert 0.0 <= out["p_td"] <= 1.0
+    assert 0.0 <= out["p_fg"] <= 1.0
+    assert out["p_score"] == pytest.approx(out["p_td"] + out["p_fg"])
+
+
+def test_more_time_never_lowers_scoring_probability(real_drives):
+    model = fit(real_drives)
+    probs = [
+        model.predict(seconds_left=t, ep_start=0.5, timeouts=2, needs_td=1)["p_score"]
+        for t in [30, 60, 120, 240, 480]
+    ]
+    assert probs == sorted(probs), f"P(score) fell as time rose: {probs}"
+
+
+def test_better_field_position_never_lowers_scoring_probability(real_drives):
+    model = fit(real_drives)
+    probs = [
+        model.predict(seconds_left=180, ep_start=ep, timeouts=2, needs_td=1)["p_score"]
+        for ep in [-1.0, 0.0, 1.0, 2.0, 3.0]
+    ]
+    assert probs == sorted(probs), f"P(score) fell as position improved: {probs}"
+
+
+def test_coefficients_are_reported_per_outcome(real_drives):
+    model = fit(real_drives)
+    coefs = model.coefficients()
+    assert list(coefs.columns) == FEATURE_NAMES
+    assert "TD" in coefs.index and "FG" in coefs.index

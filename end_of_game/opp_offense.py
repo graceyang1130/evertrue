@@ -92,3 +92,81 @@ def load_drives(path, quarter=4):
     drives = drives.dropna(subset=["seconds_left"])
 
     return drives.reset_index(drop=True)
+
+
+from sklearn.linear_model import LogisticRegression
+
+# Feature order is part of the interface -- design_matrix, coefficients() and
+# every validation report rely on it.
+FEATURE_NAMES = ["log_seconds", "ep_start", "timeouts", "needs_td"]
+
+# Outcome labels for the multinomial fit.
+OUTCOME_TD = "TD"
+OUTCOME_FG = "FG"
+OUTCOME_NONE = "NONE"
+
+# Clock enters as a log because the first 30 seconds of a possession matter far
+# more than the thirtieth 30 seconds. Floored so log stays finite at 0:00.
+MIN_SECONDS = 5.0
+
+
+def design_matrix(frame):
+    """Model features, in FEATURE_NAMES order."""
+    return np.column_stack([
+        np.log(frame.seconds_left.clip(lower=MIN_SECONDS).to_numpy(float)),
+        frame.ep_start.fillna(0.0).to_numpy(float),
+        frame.timeouts.fillna(3.0).to_numpy(float),
+        frame.needs_td.to_numpy(float),
+    ])
+
+
+def _outcomes(frame):
+    return np.where(
+        frame.scored_td == 1, OUTCOME_TD,
+        np.where(frame.scored_fg == 1, OUTCOME_FG, OUTCOME_NONE),
+    )
+
+
+class OppOffenseModel:
+    """Fitted multinomial model over drive outcomes."""
+
+    def __init__(self, estimator, n_train):
+        self._estimator = estimator
+        self.n_train = n_train
+
+    def predict(self, seconds_left, ep_start, timeouts, needs_td):
+        frame = pd.DataFrame([{
+            "seconds_left": float(seconds_left),
+            "ep_start": float(ep_start),
+            "timeouts": float(timeouts),
+            "needs_td": float(needs_td),
+        }])
+        return self.predict_frame(frame).iloc[0].to_dict()
+
+    def predict_frame(self, frame):
+        """Vectorised prediction. Returns a frame of p_td, p_fg, p_score."""
+        probabilities = self._estimator.predict_proba(design_matrix(frame))
+        classes = list(self._estimator.classes_)
+        p_td = probabilities[:, classes.index(OUTCOME_TD)]
+        p_fg = probabilities[:, classes.index(OUTCOME_FG)]
+        return pd.DataFrame({
+            "p_td": p_td,
+            "p_fg": p_fg,
+            "p_score": p_td + p_fg,
+        }, index=frame.index)
+
+    def coefficients(self):
+        return pd.DataFrame(
+            self._estimator.coef_,
+            index=list(self._estimator.classes_),
+            columns=FEATURE_NAMES,
+        )
+
+
+def fit(drives):
+    """Fit the outcome model. Drops drives missing a required field."""
+    usable = drives.dropna(
+        subset=["seconds_left", "ep_start", "timeouts", "end_event"])
+    estimator = LogisticRegression(max_iter=2000)
+    estimator.fit(design_matrix(usable), _outcomes(usable))
+    return OppOffenseModel(estimator, n_train=len(usable))
