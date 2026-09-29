@@ -153,8 +153,8 @@ def test_coefficients_are_reported_per_outcome(real_drives):
     assert "TD" in coefs.index and "FG" in coefs.index
 
 
-from opp_offense import (anchor_check, calibration_table, holdout_evaluation,
-                         median_ep_at, monotonicity_check)
+from opp_offense import (MIN_BIN_N, anchor_check, calibration_table,
+                         holdout_evaluation, median_ep_at, monotonicity_check)
 
 
 def test_calibration_table_bins_and_totals(real_drives):
@@ -194,3 +194,9 @@ def test_anchor_check_own_25_one_minute_needing_a_touchdown(real_drives):
     row = checks.set_index("scenario").loc["own 25, 1:00, needs TD"]
     assert row.p_score < 0.25, f"implausibly high: {row.p_score}"
     assert bool(row.plausible)
+
+
+def test_no_calibration_bin_is_thinner_than_the_floor(real_drives):
+    model = fit(real_drives)
+    table = calibration_table(model, real_drives, bins=10)
+    assert table.n.min() >= MIN_BIN_N, f"thinnest bin n={table.n.min()}"

@@ -185,6 +185,10 @@ MONOTONE_UP = ["log_seconds", "ep_start"]
 # rarely. A model that disagrees is wrong whatever its AUC.
 ANCHOR_CEILING = 0.25
 
+# A calibration bin thinner than this is too thin to trust -- the gate
+# refuses it rather than let a handful of drives pass for a validated rate.
+MIN_BIN_N = 30
+
 
 def median_ep_at(drives, yards_to_goal_target, tolerance=5):
     """Typical expected points from a given distance, for building scenarios."""
@@ -227,19 +231,26 @@ def monotonicity_check(model):
     """Every must-rise feature must have a non-negative scoring coefficient.
 
     The multinomial fit gives one coefficient per outcome, so the effect on
-    P(score) is read as the scoring outcomes' coefficients net of the
-    no-score outcome's.
+    P(score) is read as each scoring outcome's coefficient net of the
+    no-score outcome's -- an exact log-odds derivative. Both the TD effect
+    and the FG effect must be individually non-negative for P(score) to be
+    provably non-decreasing in the feature; averaging them would let a large
+    positive TD effect mask a genuinely negative FG effect.
     """
     coefs = model.coefficients()
-    scoring = coefs.loc[[OUTCOME_TD, OUTCOME_FG]].mean()
+    td = coefs.loc[OUTCOME_TD]
+    fg = coefs.loc[OUTCOME_FG]
     none = coefs.loc[OUTCOME_NONE]
     rows = []
     for feature in MONOTONE_UP:
-        effect = float(scoring[feature] - none[feature])
+        td_effect = float(td[feature] - none[feature])
+        fg_effect = float(fg[feature] - none[feature])
         rows.append({
             "feature": feature,
-            "direction": round(effect, 4),
-            "passed": effect >= 0,
+            "direction": round(min(td_effect, fg_effect), 4),
+            "td_effect": round(td_effect, 4),
+            "fg_effect": round(fg_effect, 4),
+            "passed": td_effect >= 0 and fg_effect >= 0,
         })
     return pd.DataFrame(rows)
 
