@@ -213,3 +213,35 @@ def test_cli_gates_exit_zero_on_real_data():
     assert result.returncode == 0, result.stdout + result.stderr
     assert "PASS" in result.stdout
     assert "FAIL" not in result.stdout
+
+
+def test_median_ep_at_raises_when_too_few_drives_support_the_cell(real_drives):
+    with pytest.raises(LookupError):
+        median_ep_at(real_drives, yards_to_goal_target=500)
+
+
+def test_median_ep_at_respects_the_min_n_floor(real_drives):
+    # the red-zone band at a tight clock is backed by single digits of drives
+    with pytest.raises(LookupError):
+        median_ep_at(real_drives, yards_to_goal_target=20, seconds_left=30,
+                     min_n=MIN_BIN_N)
+
+
+def test_clock_matched_ep_differs_from_all_clock_ep(real_drives):
+    # pff_EXPECTED_POINTS embeds time, so ignoring the clock double-counts it
+    all_clock = median_ep_at(real_drives, yards_to_goal_target=50)
+    late = median_ep_at(real_drives, yards_to_goal_target=50, seconds_left=30)
+    assert all_clock != late
+
+
+def test_design_matrix_raises_on_non_finite_features(real_drives):
+    broken = real_drives.head(20).copy()
+    broken.loc[broken.index[0], "ep_start"] = np.nan
+    with pytest.raises(ValueError):
+        design_matrix(broken)
+
+
+def test_required_fields_is_shared_by_fit_and_calibration(real_drives):
+    model = fit(real_drives)
+    table = calibration_table(model, real_drives, bins=10)
+    assert table.n.sum() == model.n_train

@@ -14,8 +14,12 @@ field goal, and plays accordingly. What they need is a model input, not a
 detail.
 """
 
+import argparse
+
 import numpy as np
 import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
 
 # A drive's own scoring plays. FUMBLE-TD and INTERCEPTION-TD are the DEFENSE
 # scoring -- counting them here would inflate every estimate this module makes.
@@ -25,14 +29,10 @@ FG_EVENTS = {"FIELD GOAL"}
 # Trailing by more than a field goal means a field goal cannot tie it.
 FG_MAX = 3
 
-# Columns the loader reads. Kept explicit so a changed export fails loudly
-# instead of silently producing NaNs.
-DRIVE_COLUMNS = [
-    "pff_DRIVEID", "pff_GAMESEASON", "pff_QUARTER", "pff_CLOCK",
-    "pff_OFFTEAM", "pff_DEFTEAM", "pff_OFFSCORE", "pff_DEFSCORE",
-    "pff_SCOREDIFFERENTIAL", "pff_FIELDPOSITION", "pff_EXPECTED_POINTS",
-    "pff_OFF_TIMEOUTS_REMAINING", "pff_DRIVEENDEVENT",
-]
+# Fields a drive must have for the model to use it. Shared by fit() and every
+# validation report so they can never drift apart -- a test asserts their row
+# counts match, and that test is only meaningful if the subsets are identical.
+REQUIRED_FIELDS = ["seconds_left", "ep_start", "score_diff", "end_event"]
 
 
 def yards_to_goal(field_position):
@@ -94,8 +94,6 @@ def load_drives(path, quarter=4):
     return drives.reset_index(drop=True)
 
 
-from sklearn.linear_model import LogisticRegression
-
 # Feature order is part of the interface -- design_matrix, coefficients() and
 # every validation report rely on it.
 FEATURE_NAMES = ["log_seconds", "ep_start", "needs_td"]
@@ -111,12 +109,22 @@ MIN_SECONDS = 5.0
 
 
 def design_matrix(frame):
-    """Model features, in FEATURE_NAMES order."""
-    return np.column_stack([
+    """Model features, in FEATURE_NAMES order.
+
+    Requires complete inputs -- callers must filter on REQUIRED_FIELDS first.
+    Raises rather than imputing a missing value, so a bad input fails here
+    with a clear message instead of surfacing as a cryptic sklearn error.
+    """
+    matrix = np.column_stack([
         np.log(frame.seconds_left.clip(lower=MIN_SECONDS).to_numpy(float)),
-        frame.ep_start.fillna(0.0).to_numpy(float),
+        frame.ep_start.to_numpy(float),
         frame.needs_td.to_numpy(float),
     ])
+    if not np.isfinite(matrix).all():
+        raise ValueError(
+            "design_matrix received non-finite features; a caller passed drives "
+            "that were not filtered on REQUIRED_FIELDS")
+    return matrix
 
 
 def _outcomes(frame):
@@ -163,14 +171,11 @@ class OppOffenseModel:
 
 def fit(drives):
     """Fit the outcome model. Drops drives missing a required field."""
-    usable = drives.dropna(
-        subset=["seconds_left", "ep_start", "end_event"])
+    usable = drives.dropna(subset=REQUIRED_FIELDS)
     estimator = LogisticRegression(max_iter=2000)
     estimator.fit(design_matrix(usable), _outcomes(usable))
     return OppOffenseModel(estimator, n_train=len(usable))
 
-
-from sklearn.metrics import roc_auc_score
 
 # Monotonicity: more clock and better field position must never reduce
 # scoring probability. A negative coefficient on either of these means the
@@ -190,17 +195,32 @@ ANCHOR_CEILING = 0.25
 MIN_BIN_N = 30
 
 
-def median_ep_at(drives, yards_to_goal_target, tolerance=5):
-    """Typical expected points from a given distance, for building scenarios."""
+def median_ep_at(drives, yards_to_goal_target, tolerance=5,
+                 seconds_left=None, seconds_tolerance=120, min_n=1):
+    """Typical expected points from a given distance, for building scenarios.
+
+    `pff_EXPECTED_POINTS` embeds time remaining as well as field position, so
+    pass `seconds_left` whenever the caller is asking about a specific clock --
+    otherwise the all-clock median is combined with a specific clock and the
+    time effect is counted twice.
+
+    Raises LookupError when fewer than `min_n` drives support the cell, rather
+    than returning a number no data stands behind.
+    """
     near = drives[
         (drives.yards_to_goal - yards_to_goal_target).abs() <= tolerance]
+    if seconds_left is not None:
+        near = near[(near.seconds_left - seconds_left).abs() <= seconds_tolerance]
+    if len(near) < min_n:
+        raise LookupError(
+            f"only {len(near)} drives within {tolerance} yards of "
+            f"{yards_to_goal_target} (clock {seconds_left}); need {min_n}")
     return float(near.ep_start.median())
 
 
 def calibration_table(model, drives, bins=10):
     """Predicted against observed scoring rate, by predicted-probability bin."""
-    usable = drives.dropna(
-        subset=["seconds_left", "ep_start", "end_event"]).copy()
+    usable = drives.dropna(subset=REQUIRED_FIELDS).copy()
     usable["predicted"] = model.predict_frame(usable).p_score.to_numpy()
     usable["bin"] = pd.qcut(
         usable.predicted, bins, labels=False, duplicates="drop")
@@ -216,7 +236,7 @@ def holdout_evaluation(drives, train_seasons, test_seasons):
     """Fit on one set of seasons, score on another. Out-of-sample or bust."""
     train = drives[drives.season.isin(train_seasons)]
     test = drives[drives.season.isin(test_seasons)].dropna(
-        subset=["seconds_left", "ep_start", "end_event"])
+        subset=REQUIRED_FIELDS)
     model = fit(train)
     predicted = model.predict_frame(test).p_score.to_numpy()
     return {
@@ -274,8 +294,6 @@ def anchor_check(model, drives):
         })
     return pd.DataFrame(rows)
 
-
-import argparse
 
 HOLDOUT_TRAIN = [2019, 2021, 2022, 2023, 2024]
 HOLDOUT_TEST = [2025, 2026]
@@ -341,6 +359,10 @@ def main():
           f"{drives[drives.seconds_left <= 300].scored.mean():.3f} inside 5:00")
 
     passed, lines, model = run_gates(drives)
+
+    print("\nFITTED COEFFICIENTS")
+    print(model.coefficients().round(4).to_string())
+
     print("\nVALIDATION GATES")
     for line in lines:
         print("  " + line)
@@ -351,10 +373,30 @@ def main():
     for seconds in [30, 60, 120, 180, 300]:
         row = f"  {seconds // 60}:{seconds % 60:02d}".rjust(9)
         for ytg in [80, 65, 50, 35, 20]:
-            ep = median_ep_at(drives, ytg)
+            try:
+                ep = median_ep_at(drives, ytg, seconds_left=seconds,
+                                  min_n=MIN_BIN_N)
+            except LookupError:
+                row += f"{'--':>8}"
+                continue
             p = model.predict(seconds, ep, 1)["p_score"]
             row += f"{p:>8.2f}"
         print(row)
+    print(f"  -- = fewer than {MIN_BIN_N} comparable drives; no number printed")
+
+    print("\nWHERE THE TOOL ACTUALLY OPERATES (reporting only, not a gate)")
+    print(f"  {'region':>10s} {'n':>6s} {'AUC':>7s} {'calib':>7s}")
+    usable = drives.dropna(subset=REQUIRED_FIELDS).copy()
+    usable["predicted"] = model.predict_frame(usable).p_score.to_numpy()
+    for limit, label in [(None, "all Q4"), (600, "<=10:00"),
+                         (300, "<=5:00"), (120, "<=2:00")]:
+        region = usable if limit is None else usable[usable.seconds_left <= limit]
+        if region.scored.nunique() < 2:
+            continue
+        auc = roc_auc_score(region.scored.to_numpy(),
+                            region.predicted.to_numpy())
+        calib = abs(region.predicted.mean() - region.scored.mean())
+        print(f"  {label:>10s} {len(region):6d} {auc:7.3f} {calib:7.3f}")
 
     if args.gates and not passed:
         raise SystemExit(1)
