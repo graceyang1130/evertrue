@@ -112,7 +112,7 @@ def real_drives():
 def test_design_matrix_shape_and_order(real_drives):
     matrix = design_matrix(real_drives.head(10))
     assert matrix.shape == (10, len(FEATURE_NAMES))
-    assert FEATURE_NAMES == ["log_seconds", "ep_start", "timeouts", "needs_td"]
+    assert FEATURE_NAMES == ["log_seconds", "ep_start", "needs_td"]
 
 
 def test_design_matrix_has_no_nan_or_inf(real_drives):
@@ -122,7 +122,7 @@ def test_design_matrix_has_no_nan_or_inf(real_drives):
 
 def test_predict_returns_probabilities_that_sum_correctly(real_drives):
     model = fit(real_drives)
-    out = model.predict(seconds_left=120, ep_start=0.5, timeouts=2, needs_td=1)
+    out = model.predict(seconds_left=120, ep_start=0.5, needs_td=1)
     assert 0.0 <= out["p_td"] <= 1.0
     assert 0.0 <= out["p_fg"] <= 1.0
     assert out["p_score"] == pytest.approx(out["p_td"] + out["p_fg"])
@@ -131,7 +131,7 @@ def test_predict_returns_probabilities_that_sum_correctly(real_drives):
 def test_more_time_never_lowers_scoring_probability(real_drives):
     model = fit(real_drives)
     probs = [
-        model.predict(seconds_left=t, ep_start=0.5, timeouts=2, needs_td=1)["p_score"]
+        model.predict(seconds_left=t, ep_start=0.5, needs_td=1)["p_score"]
         for t in [30, 60, 120, 240, 480]
     ]
     assert probs == sorted(probs), f"P(score) fell as time rose: {probs}"
@@ -140,7 +140,7 @@ def test_more_time_never_lowers_scoring_probability(real_drives):
 def test_better_field_position_never_lowers_scoring_probability(real_drives):
     model = fit(real_drives)
     probs = [
-        model.predict(seconds_left=180, ep_start=ep, timeouts=2, needs_td=1)["p_score"]
+        model.predict(seconds_left=180, ep_start=ep, needs_td=1)["p_score"]
         for ep in [-1.0, 0.0, 1.0, 2.0, 3.0]
     ]
     assert probs == sorted(probs), f"P(score) fell as position improved: {probs}"
@@ -151,3 +151,46 @@ def test_coefficients_are_reported_per_outcome(real_drives):
     coefs = model.coefficients()
     assert list(coefs.columns) == FEATURE_NAMES
     assert "TD" in coefs.index and "FG" in coefs.index
+
+
+from opp_offense import (anchor_check, calibration_table, holdout_evaluation,
+                         median_ep_at, monotonicity_check)
+
+
+def test_calibration_table_bins_and_totals(real_drives):
+    model = fit(real_drives)
+    table = calibration_table(model, real_drives, bins=10)
+    assert list(table.columns) == ["bin", "n", "predicted", "observed"]
+    assert table.n.sum() == model.n_train
+    # a usable model tracks the diagonal: mean absolute gap under 10 points
+    assert (table.predicted - table.observed).abs().mean() < 0.10
+
+
+def test_holdout_evaluation_trains_and_tests_on_disjoint_seasons(real_drives):
+    result = holdout_evaluation(
+        real_drives, train_seasons=[2019, 2021, 2022, 2023, 2024],
+        test_seasons=[2025, 2026])
+    assert result["n_train"] > 1000
+    assert result["n_test"] > 100
+    # beating a coin flip out of sample is the bar for using this at all
+    assert result["auc"] > 0.60, f"out-of-sample AUC {result['auc']}"
+
+
+def test_monotonicity_check_reports_every_feature(real_drives):
+    model = fit(real_drives)
+    checks = monotonicity_check(model)
+    assert set(checks.feature) == {"log_seconds", "ep_start"}
+    assert checks.passed.all(), f"sign flip: {checks.to_dict('records')}"
+
+
+def test_median_ep_at_own_25_is_low(real_drives):
+    ep = median_ep_at(real_drives, yards_to_goal_target=75)
+    assert -2.0 < ep < 2.0
+
+
+def test_anchor_check_own_25_one_minute_needing_a_touchdown(real_drives):
+    model = fit(real_drives)
+    checks = anchor_check(model, real_drives)
+    row = checks.set_index("scenario").loc["own 25, 1:00, needs TD"]
+    assert row.p_score < 0.25, f"implausibly high: {row.p_score}"
+    assert bool(row.plausible)

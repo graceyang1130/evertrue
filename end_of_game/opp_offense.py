@@ -98,7 +98,7 @@ from sklearn.linear_model import LogisticRegression
 
 # Feature order is part of the interface -- design_matrix, coefficients() and
 # every validation report rely on it.
-FEATURE_NAMES = ["log_seconds", "ep_start", "timeouts", "needs_td"]
+FEATURE_NAMES = ["log_seconds", "ep_start", "needs_td"]
 
 # Outcome labels for the multinomial fit.
 OUTCOME_TD = "TD"
@@ -115,7 +115,6 @@ def design_matrix(frame):
     return np.column_stack([
         np.log(frame.seconds_left.clip(lower=MIN_SECONDS).to_numpy(float)),
         frame.ep_start.fillna(0.0).to_numpy(float),
-        frame.timeouts.fillna(3.0).to_numpy(float),
         frame.needs_td.to_numpy(float),
     ])
 
@@ -134,11 +133,10 @@ class OppOffenseModel:
         self._estimator = estimator
         self.n_train = n_train
 
-    def predict(self, seconds_left, ep_start, timeouts, needs_td):
+    def predict(self, seconds_left, ep_start, needs_td):
         frame = pd.DataFrame([{
             "seconds_left": float(seconds_left),
             "ep_start": float(ep_start),
-            "timeouts": float(timeouts),
             "needs_td": float(needs_td),
         }])
         return self.predict_frame(frame).iloc[0].to_dict()
@@ -166,7 +164,101 @@ class OppOffenseModel:
 def fit(drives):
     """Fit the outcome model. Drops drives missing a required field."""
     usable = drives.dropna(
-        subset=["seconds_left", "ep_start", "timeouts", "end_event"])
+        subset=["seconds_left", "ep_start", "end_event"])
     estimator = LogisticRegression(max_iter=2000)
     estimator.fit(design_matrix(usable), _outcomes(usable))
     return OppOffenseModel(estimator, n_train=len(usable))
+
+
+from sklearn.metrics import roc_auc_score
+
+# Monotonicity: more clock and better field position must never reduce
+# scoring probability. A negative coefficient on either of these means the
+# fit is chasing noise, and the spec treats that as a failure.
+#
+# Amendment 1: timeouts was dropped from the regression entirely (see
+# DESIGN.md). It is not a monotone-up feature here because it is not a
+# feature at all.
+MONOTONE_UP = ["log_seconds", "ep_start"]
+
+# An offense at its own 25 with a minute left, needing a touchdown, scores
+# rarely. A model that disagrees is wrong whatever its AUC.
+ANCHOR_CEILING = 0.25
+
+
+def median_ep_at(drives, yards_to_goal_target, tolerance=5):
+    """Typical expected points from a given distance, for building scenarios."""
+    near = drives[
+        (drives.yards_to_goal - yards_to_goal_target).abs() <= tolerance]
+    return float(near.ep_start.median())
+
+
+def calibration_table(model, drives, bins=10):
+    """Predicted against observed scoring rate, by predicted-probability bin."""
+    usable = drives.dropna(
+        subset=["seconds_left", "ep_start", "end_event"]).copy()
+    usable["predicted"] = model.predict_frame(usable).p_score.to_numpy()
+    usable["bin"] = pd.qcut(
+        usable.predicted, bins, labels=False, duplicates="drop")
+    grouped = usable.groupby("bin", observed=True).agg(
+        n=("scored", "size"),
+        predicted=("predicted", "mean"),
+        observed=("scored", "mean"),
+    ).reset_index()
+    return grouped[["bin", "n", "predicted", "observed"]]
+
+
+def holdout_evaluation(drives, train_seasons, test_seasons):
+    """Fit on one set of seasons, score on another. Out-of-sample or bust."""
+    train = drives[drives.season.isin(train_seasons)]
+    test = drives[drives.season.isin(test_seasons)].dropna(
+        subset=["seconds_left", "ep_start", "end_event"])
+    model = fit(train)
+    predicted = model.predict_frame(test).p_score.to_numpy()
+    return {
+        "auc": float(roc_auc_score(test.scored.to_numpy(), predicted)),
+        "n_train": int(model.n_train),
+        "n_test": int(len(test)),
+        "calibration": calibration_table(model, test, bins=5),
+    }
+
+
+def monotonicity_check(model):
+    """Every must-rise feature must have a non-negative scoring coefficient.
+
+    The multinomial fit gives one coefficient per outcome, so the effect on
+    P(score) is read as the scoring outcomes' coefficients net of the
+    no-score outcome's.
+    """
+    coefs = model.coefficients()
+    scoring = coefs.loc[[OUTCOME_TD, OUTCOME_FG]].mean()
+    none = coefs.loc[OUTCOME_NONE]
+    rows = []
+    for feature in MONOTONE_UP:
+        effect = float(scoring[feature] - none[feature])
+        rows.append({
+            "feature": feature,
+            "direction": round(effect, 4),
+            "passed": effect >= 0,
+        })
+    return pd.DataFrame(rows)
+
+
+def anchor_check(model, drives):
+    """Scenarios whose answers are known well enough to falsify the model."""
+    ep_own_25 = median_ep_at(drives, 75)
+    ep_own_40 = median_ep_at(drives, 60)
+    scenarios = [
+        ("own 25, 1:00, needs TD", 60, ep_own_25, 1, ANCHOR_CEILING),
+        ("own 25, 0:20, needs TD", 20, ep_own_25, 1, 0.10),
+        ("own 40, 5:00, needs TD", 300, ep_own_40, 1, 0.80),
+    ]
+    rows = []
+    for label, seconds, ep, needs_td, ceiling in scenarios:
+        p = model.predict(seconds, ep, needs_td)["p_score"]
+        rows.append({
+            "scenario": label,
+            "p_score": round(p, 3),
+            "plausible": p < ceiling,
+        })
+    return pd.DataFrame(rows)
