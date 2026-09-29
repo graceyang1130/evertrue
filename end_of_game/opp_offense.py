@@ -273,3 +273,92 @@ def anchor_check(model, drives):
             "plausible": p < ceiling,
         })
     return pd.DataFrame(rows)
+
+
+import argparse
+
+HOLDOUT_TRAIN = [2019, 2021, 2022, 2023, 2024]
+HOLDOUT_TEST = [2025, 2026]
+CALIBRATION_TOLERANCE = 0.10
+MIN_AUC = 0.60
+
+
+def run_gates(drives):
+    """All five spec gates. Returns (passed, lines) for printing."""
+    model = fit(drives)
+    lines = []
+    passed = True
+
+    calibration = calibration_table(model, drives)
+    gap = float((calibration.predicted - calibration.observed).abs().mean())
+    ok = gap < CALIBRATION_TOLERANCE
+    passed &= ok
+    lines.append(f"[{'PASS' if ok else 'FAIL'}] 1. calibration      "
+                 f"mean |predicted-observed| = {gap:.3f}")
+
+    holdout = holdout_evaluation(drives, HOLDOUT_TRAIN, HOLDOUT_TEST)
+    ok = holdout["auc"] > MIN_AUC
+    passed &= ok
+    lines.append(f"[{'PASS' if ok else 'FAIL'}] 2. season holdout   "
+                 f"AUC = {holdout['auc']:.3f} "
+                 f"(train {holdout['n_train']}, test {holdout['n_test']})")
+
+    monotone = monotonicity_check(model)
+    ok = bool(monotone.passed.all())
+    passed &= ok
+    lines.append(f"[{'PASS' if ok else 'FAIL'}] 3. monotonicity     " +
+                 ", ".join(f"{r.feature}={r.direction:+.3f}"
+                           for r in monotone.itertuples()))
+
+    anchors = anchor_check(model, drives)
+    ok = bool(anchors.plausible.all())
+    passed &= ok
+    lines.append(f"[{'PASS' if ok else 'FAIL'}] 4. anchors          " +
+                 ", ".join(f"{r.scenario} -> {r.p_score:.2f}"
+                           for r in anchors.itertuples()))
+
+    thin = calibration[calibration.n < MIN_BIN_N]
+    ok = thin.empty
+    passed &= ok
+    lines.append(f"[{'PASS' if ok else 'FAIL'}] 5. sample floor     "
+                 f"{len(thin)} calibration bins under n=30")
+
+    return passed, lines, model
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("csv", help="PFF play-by-play export")
+    parser.add_argument("--quarter", type=int, default=4)
+    parser.add_argument("--gates", action="store_true",
+                        help="run the five validation gates and exit nonzero on failure")
+    args = parser.parse_args()
+
+    drives = load_drives(args.csv, quarter=args.quarter)
+    print(f"{len(drives)} Q{args.quarter} drives, "
+          f"seasons {int(drives.season.min())}-{int(drives.season.max())}")
+    print(f"score rate: {drives.scored.mean():.3f} overall, "
+          f"{drives[drives.seconds_left <= 300].scored.mean():.3f} inside 5:00")
+
+    passed, lines, model = run_gates(drives)
+    print("\nVALIDATION GATES")
+    for line in lines:
+        print("  " + line)
+
+    print("\nP(score) BY TIME LEFT AND FIELD POSITION (needs TD)")
+    header = "".join(f"{y:>8d}" for y in [80, 65, 50, 35, 20])
+    print(f"  {'clock':>7s}{header}   <- yards to goal")
+    for seconds in [30, 60, 120, 180, 300]:
+        row = f"  {seconds // 60}:{seconds % 60:02d}".rjust(9)
+        for ytg in [80, 65, 50, 35, 20]:
+            ep = median_ep_at(drives, ytg)
+            p = model.predict(seconds, ep, 1)["p_score"]
+            row += f"{p:>8.2f}"
+        print(row)
+
+    if args.gates and not passed:
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()

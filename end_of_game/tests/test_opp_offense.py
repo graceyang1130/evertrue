@@ -200,3 +200,16 @@ def test_no_calibration_bin_is_thinner_than_the_floor(real_drives):
     model = fit(real_drives)
     table = calibration_table(model, real_drives, bins=10)
     assert table.n.min() >= MIN_BIN_N, f"thinnest bin n={table.n.min()}"
+
+
+import subprocess
+import sys
+
+
+def test_cli_gates_exit_zero_on_real_data():
+    result = subprocess.run(
+        [sys.executable, "opp_offense.py", "ivy_19t26.csv", "--gates"],
+        capture_output=True, text=True, cwd=".")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "PASS" in result.stdout
+    assert "FAIL" not in result.stdout
