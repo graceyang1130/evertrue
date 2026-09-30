@@ -212,6 +212,37 @@ def fit(drives):
     return OppOffenseModel(estimator, n_train=len(usable))
 
 
+# A season needs at least this many drives to be worth holding out as a fold.
+MIN_FOLD_N = 20
+
+
+def loso_predictions(drives):
+    """Out-of-fold scoring probabilities, leaving each season out in turn.
+
+    Every out-of-sample gate shares these folds. A single train/test season
+    split does not survive this population: the <=5:00 slice of a 2025-26
+    holdout is n=56, where AUC reads 0.596 -- against 0.674 for the same model
+    scored leave-one-season-out. At n=720 a single holdout measures which
+    seasons happened to land in the test fold. See DESIGN.md Amendment 2.
+    """
+    usable = drives.dropna(subset=REQUIRED_FIELDS).copy()
+    usable["predicted"] = np.nan
+
+    for season in sorted(usable.season.unique()):
+        test = usable[usable.season == season]
+        train = usable[usable.season != season]
+        if len(test) < MIN_FOLD_N or train.empty:
+            continue
+        # a multinomial fit needs all three outcomes present in training
+        if len(set(_outcomes(train))) < 3:
+            continue
+        model = fit(train)
+        usable.loc[test.index, "predicted"] = (
+            model.predict_frame(test).p_score.to_numpy())
+
+    return usable.dropna(subset=["predicted"])
+
+
 # Monotonicity: more clock and better field position must never reduce
 # scoring probability. A negative coefficient on either of these means the
 # fit is chasing noise, and the spec treats that as a failure.

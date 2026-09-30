@@ -318,3 +318,36 @@ def test_anchor_bounds_are_wide_enough_to_be_a_coarse_check_only(real_drives):
     assert (widths > 0.12).all(), (
         "an anchor interval is narrow enough to be mistaken for a precise "
         "check; re-read the SCOPE note on anchor_check")
+
+
+from opp_offense import MIN_FOLD_N, loso_predictions
+
+
+def test_loso_predictions_covers_most_of_the_population(real_drives):
+    pop = decision_population(real_drives)
+    out = loso_predictions(pop)
+    usable = pop.dropna(subset=REQUIRED_FIELDS)
+    # every season with enough drives gets folded; allow a little loss to
+    # seasons too thin to hold out
+    assert len(out) > 0.85 * len(usable)
+
+
+def test_loso_predictions_are_probabilities(real_drives):
+    out = loso_predictions(decision_population(real_drives))
+    assert out.predicted.between(0.0, 1.0).all()
+    assert out.predicted.notna().all()
+
+
+def test_loso_predictions_are_out_of_sample(real_drives):
+    """An out-of-fold prediction must be worse than an in-sample one. If they
+    match, a fold is leaking its own season into training."""
+    pop = decision_population(real_drives)
+    out = loso_predictions(pop)
+    in_sample = fit(pop).predict_frame(out).p_score.to_numpy()
+    assert not np.allclose(out.predicted.to_numpy(), in_sample)
+
+
+def test_loso_predictions_keeps_season_and_outcome_columns(real_drives):
+    out = loso_predictions(decision_population(real_drives))
+    for column in ["season", "scored", "seconds_left", "score_diff"]:
+        assert column in out.columns
