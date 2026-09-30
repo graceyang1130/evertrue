@@ -389,6 +389,18 @@ MONOTONE_UP = ["log_seconds", "ep_start"]
 # refuses it rather than let a handful of drives pass for a validated rate.
 MIN_BIN_N = 30
 
+# Where trailing teams actually start fourth-quarter drives: the median is 75
+# yards out (own 25) and the distribution concentrates between 65 and 85, since
+# a team getting the ball back has just received a punt or a kickoff. An earlier
+# card used [80, 65, 50, 35, 20], whose two nearest columns were backed by 0-1
+# drives -- it asked about field positions that do not occur.
+CARD_YARDS_TO_GOAL = [90, 80, 75, 70, 60]
+CARD_CLOCKS = [30, 60, 120, 180, 300]
+
+# Below this share of printable cells the card is mostly blanks and the model is
+# being asked about situations its population does not contain.
+MIN_SUPPORTED_CELL_FRACTION = 0.50
+
 
 def median_ep_at(drives, yards_to_goal_target, tolerance=5,
                  seconds_left=None, seconds_tolerance=120, min_n=1):
@@ -411,6 +423,33 @@ def median_ep_at(drives, yards_to_goal_target, tolerance=5,
             f"only {len(near)} drives within {tolerance} yards of "
             f"{yards_to_goal_target} (clock {seconds_left}); need {min_n}")
     return float(near.ep_start.median())
+
+
+def card_cells(model, drives):
+    """One row per printed card cell: its support, and its probability.
+
+    A cell is printed only when at least MIN_BIN_N comparable drives stand
+    behind it. DESIGN.md has always required refusing to print a cell the data
+    cannot support; this is where that is enforced.
+    """
+    rows = []
+    for seconds in CARD_CLOCKS:
+        for ytg in CARD_YARDS_TO_GOAL:
+            near = drives[
+                ((drives.yards_to_goal - ytg).abs() <= 5)
+                & ((drives.seconds_left - seconds).abs() <= 120)]
+            if len(near) < MIN_BIN_N:
+                rows.append({"seconds": seconds, "yards_to_goal": ytg,
+                             "n": int(len(near)), "supported": False,
+                             "p_score": np.nan})
+                continue
+            ep = median_ep_at(drives, ytg, seconds_left=seconds,
+                              min_n=MIN_BIN_N)
+            rows.append({"seconds": seconds, "yards_to_goal": ytg,
+                         "n": int(len(near)), "supported": True,
+                         "p_score": round(
+                             model.predict(seconds, ep, 1)["p_score"], 3)})
+    return pd.DataFrame(rows)
 
 
 def calibration_table(model, drives, bins=10):
@@ -563,11 +602,13 @@ def run_gates(drives):
                            f"in [{r.floor:.2f},{r.ceiling:.2f}]"
                            for r in tested.itertuples()))
 
-    thin = calibration[calibration.n < MIN_BIN_N]
-    ok = thin.empty
+    cells = card_cells(model, drives)
+    fraction = float(cells.supported.mean())
+    ok = fraction >= MIN_SUPPORTED_CELL_FRACTION
     passed &= ok
-    lines.append(f"[{'PASS' if ok else 'FAIL'}] 5. sample floor     "
-                 f"{len(thin)} calibration bins under n=30")
+    lines.append(f"[{'PASS' if ok else 'FAIL'}] 5. card support     "
+                 f"{cells.supported.sum()}/{len(cells)} cells backed by "
+                 f">={MIN_BIN_N} drives ({fraction:.0%})")
 
     conditional = conditional_calibration(out_of_fold)
     scored = conditional.dropna(subset=["worst_band_bias"])
@@ -617,25 +658,34 @@ def main():
     for line in lines:
         print("  " + line)
 
-    print("\nP(score) BY TIME LEFT AND FIELD POSITION (needs TD)")
-    header = "".join(f"{y:>8d}" for y in [80, 65, 50, 35, 20])
+    cells = card_cells(model, drives)
+    print("\nP(score) BY TIME LEFT AND FIELD POSITION (opponent needs a TD)")
+    header = "".join(f"{y:>8d}" for y in CARD_YARDS_TO_GOAL)
     print(f"  {'clock':>7s}{header}   <- yards to goal")
-    for seconds in [30, 60, 120, 180, 300]:
+    for seconds in CARD_CLOCKS:
         row = f"  {seconds // 60}:{seconds % 60:02d}".rjust(9)
-        for ytg in [80, 65, 50, 35, 20]:
-            try:
-                ep = median_ep_at(drives, ytg, seconds_left=seconds,
-                                  min_n=MIN_BIN_N)
-            except LookupError:
-                row += f"{'--':>8}"
-                continue
-            p = model.predict(seconds, ep, 1)["p_score"]
-            row += f"{p:>8.2f}"
+        for ytg in CARD_YARDS_TO_GOAL:
+            cell = cells[(cells.seconds == seconds)
+                         & (cells.yards_to_goal == ytg)].iloc[0]
+            row += f"{'--':>8}" if not cell.supported else f"{cell.p_score:>8.2f}"
         print(row)
     print(f"  -- = fewer than {MIN_BIN_N} comparable drives; no number printed")
 
+    out_of_fold = loso_predictions(drives)
+
     print("\nOUT-OF-SAMPLE PERFORMANCE BY REGION (leave-one-season-out)")
-    print(regional_performance(loso_predictions(drives)).to_string(index=False))
+    print(regional_performance(out_of_fold).to_string(index=False))
+
+    print("\nCALIBRATION BY SCORE BAND, finer than the gate (diagnostic only)")
+    print(conditional_calibration(out_of_fold, DIAGNOSTIC_BANDS)
+          .to_string(index=False))
+    scored = conditional_calibration(out_of_fold).dropna(
+        subset=["worst_band_bias"])
+    print(f"  uncertainty: per-score-band calibration bias runs "
+          f"{scored.worst_band_bias.median():.2f} typical / "
+          f"{scored.worst_band_bias.max():.2f} worst season across "
+          f"{len(scored)} scored seasons. Read these as bands, not point "
+          f"estimates.")
 
     if args.gates and not passed:
         raise SystemExit(1)

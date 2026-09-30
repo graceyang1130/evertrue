@@ -490,3 +490,58 @@ def test_gate_6_counts_only_seasons_it_could_actually_score(real_drives):
     scored = table.dropna(subset=["worst_band_bias"])
     assert len(scored) >= MIN_SCORED_SEASONS
     assert (scored.cells_used > 0).all()
+
+
+from opp_offense import (CARD_CLOCKS, CARD_YARDS_TO_GOAL,
+                          MIN_SUPPORTED_CELL_FRACTION, card_cells)
+
+
+def test_card_axis_matches_where_drives_actually_start(real_drives):
+    """The median trailing-team drive starts 75 yards out. An axis reaching
+    into the red zone describes drives that do not happen."""
+    pop = decision_population(real_drives)
+    median_start = pop.yards_to_goal.median()
+    assert min(CARD_YARDS_TO_GOAL) <= median_start <= max(CARD_YARDS_TO_GOAL)
+
+
+def test_card_cells_covers_the_whole_grid(real_drives):
+    pop = decision_population(real_drives)
+    cells = card_cells(fit(pop), pop)
+    assert len(cells) == len(CARD_CLOCKS) * len(CARD_YARDS_TO_GOAL)
+
+
+def test_card_cells_marks_thin_cells_unsupported(real_drives):
+    pop = decision_population(real_drives)
+    cells = card_cells(fit(pop), pop)
+    for row in cells.itertuples():
+        if not row.supported:
+            assert np.isnan(row.p_score)
+        else:
+            assert row.n >= MIN_BIN_N
+            assert 0.0 <= row.p_score <= 1.0
+
+
+def test_enough_card_cells_are_supported_to_be_useful(real_drives):
+    pop = decision_population(real_drives)
+    cells = card_cells(fit(pop), pop)
+    fraction = cells.supported.mean()
+    assert fraction >= MIN_SUPPORTED_CELL_FRACTION, (
+        f"only {fraction:.0%} of card cells are supported")
+
+
+def test_the_old_card_axis_would_now_fail_the_support_gate(real_drives):
+    """Evidence the axis change was necessary, not cosmetic: the previous axis
+    reached into the red zone, where trailing teams essentially never start."""
+    pop = decision_population(real_drives)
+    model = fit(pop)
+    supported = 0
+    total = 0
+    for seconds in CARD_CLOCKS:
+        for ytg in [80, 65, 50, 35, 20]:
+            total += 1
+            try:
+                median_ep_at(pop, ytg, seconds_left=seconds, min_n=MIN_BIN_N)
+                supported += 1
+            except LookupError:
+                pass
+    assert supported / total < MIN_SUPPORTED_CELL_FRACTION
