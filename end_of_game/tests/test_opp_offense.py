@@ -153,8 +153,9 @@ def test_coefficients_are_reported_per_outcome(real_drives):
     assert "TD" in coefs.index and "FG" in coefs.index
 
 
-from opp_offense import (MIN_BIN_N, anchor_check, calibration_table,
-                         holdout_evaluation, median_ep_at, monotonicity_check)
+from opp_offense import (MIN_BIN_N, REQUIRED_FIELDS, anchor_check,
+                         calibration_table, holdout_evaluation, median_ep_at,
+                         monotonicity_check)
 
 
 def test_calibration_table_bins_and_totals(real_drives):
@@ -189,10 +190,11 @@ def test_median_ep_at_own_25_is_low(real_drives):
 
 
 def test_anchor_check_own_25_one_minute_needing_a_touchdown(real_drives):
-    model = fit(real_drives)
-    checks = anchor_check(model, real_drives)
-    row = checks.set_index("scenario").loc["own 25, 1:00, needs TD"]
-    assert row.p_score < 0.25, f"implausibly high: {row.p_score}"
+    pop = decision_population(real_drives)
+    model = fit(pop)
+    checks = anchor_check(model, pop)
+    row = checks.set_index("scenario").loc["own 25, under 3:00, needs TD"]
+    assert row.tested
     assert bool(row.plausible)
 
 
@@ -245,3 +247,74 @@ def test_required_fields_is_shared_by_fit_and_calibration(real_drives):
     model = fit(real_drives)
     table = calibration_table(model, real_drives, bins=10)
     assert table.n.sum() == model.n_train
+
+
+from opp_offense import (ANCHOR_SCENARIOS, MAX_DEFICIT, anchor_check,
+                          decision_population, wilson_interval)
+
+
+def test_decision_population_excludes_leading_offenses(real_drives):
+    pop = decision_population(real_drives)
+    assert (pop.score_diff <= 0).all()
+
+
+def test_decision_population_caps_the_deficit(real_drives):
+    pop = decision_population(real_drives)
+    assert (pop.score_diff >= -MAX_DEFICIT).all()
+
+
+def test_decision_population_size_matches_the_spec(real_drives):
+    # DESIGN.md Amendment 2 records n=720 after dropping incomplete rows
+    pop = decision_population(real_drives).dropna(subset=REQUIRED_FIELDS)
+    assert len(pop) == 720
+
+
+def test_wilson_interval_brackets_the_point_estimate():
+    low, high = wilson_interval(20, 100)
+    assert low < 0.20 < high
+
+
+def test_wilson_interval_is_wider_on_less_data():
+    narrow = wilson_interval(20, 100)
+    wide = wilson_interval(2, 10)
+    assert (wide[1] - wide[0]) > (narrow[1] - narrow[0])
+
+
+def test_wilson_interval_handles_zero_n():
+    low, high = wilson_interval(0, 0)
+    assert np.isnan(low) and np.isnan(high)
+
+
+def test_anchor_check_is_two_sided(real_drives):
+    pop = decision_population(real_drives)
+    model = fit(pop)
+    anchors = anchor_check(model, pop)
+    tested = anchors[anchors.tested]
+    assert len(tested) >= 1
+    # a two-sided anchor has both bounds, and they bracket the observed rate
+    for row in tested.itertuples():
+        assert row.floor <= row.observed <= row.ceiling
+
+
+def test_anchor_check_skips_anchors_the_data_cannot_support(real_drives):
+    pop = decision_population(real_drives)
+    model = fit(pop)
+    anchors = anchor_check(model, pop)
+    # every tested anchor must clear the support floor
+    for row in anchors[anchors.tested].itertuples():
+        assert row.n >= MIN_BIN_N
+
+
+def test_anchor_bounds_are_wide_enough_to_be_a_coarse_check_only(real_drives):
+    """Anchors are a backstop, not the primary defence, and the plan says so.
+    At n=60 a Wilson interval spans about 0.21, so a 15-point bias fits inside
+    it -- the model fitted on the WRONG population passes every anchor here.
+    This test pins that fact so nobody later mistakes an anchor pass for
+    evidence of calibration. Gate 6 is what catches population-level bias."""
+    pop = decision_population(real_drives)
+    anchors = anchor_check(fit(pop), pop)
+    tested = anchors[anchors.tested]
+    widths = tested.ceiling - tested.floor
+    assert (widths > 0.12).all(), (
+        "an anchor interval is narrow enough to be mistaken for a precise "
+        "check; re-read the SCOPE note on anchor_check")

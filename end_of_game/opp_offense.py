@@ -94,6 +94,41 @@ def load_drives(path, quarter=4):
     return drives.reset_index(drop=True)
 
 
+# The tool is only ever asked about an opponent that trails or is tied -- if
+# Brown holds the lead, a leading opponent cannot occur. Beyond this margin the
+# game is effectively decided and the behaviour stops being representative.
+MAX_DEFICIT = 16
+
+
+def decision_population(drives, max_deficit=MAX_DEFICIT):
+    """The drives the tool can actually be asked about.
+
+    Trailing or tied, within `max_deficit` points. An earlier version fitted on
+    all fourth-quarter drives, 894 of 1,978 of which were leading offenses
+    killing clock -- the opposite of the behaviour in question. That understated
+    a trailing opponent's scoring probability by up to 15 points while aggregate
+    calibration read a healthy 0.028, because the errors offset. See DESIGN.md
+    Amendment 2.
+    """
+    return drives[(drives.score_diff <= 0)
+                  & (drives.score_diff >= -max_deficit)].copy()
+
+
+def wilson_interval(successes, n, z=1.96):
+    """Wilson score interval for a binomial rate. (nan, nan) when n is 0.
+
+    Preferred over the normal approximation because the anchor neighbourhoods
+    are small enough (n=60, n=81) that the naive interval misbehaves.
+    """
+    if n == 0:
+        return (float("nan"), float("nan"))
+    p = successes / n
+    denom = 1.0 + z * z / n
+    centre = (p + z * z / (2 * n)) / denom
+    half = z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
+    return (max(0.0, centre - half), min(1.0, centre + half))
+
+
 # Feature order is part of the interface -- design_matrix, coefficients() and
 # every validation report rely on it.
 FEATURE_NAMES = ["log_seconds", "ep_start", "needs_td"]
@@ -186,10 +221,6 @@ def fit(drives):
 # feature at all.
 MONOTONE_UP = ["log_seconds", "ep_start"]
 
-# An offense at its own 25 with a minute left, needing a touchdown, scores
-# rarely. A model that disagrees is wrong whatever its AUC.
-ANCHOR_CEILING = 0.25
-
 # A calibration bin thinner than this is too thin to trust -- the gate
 # refuses it rather than let a handful of drives pass for a validated rate.
 MIN_BIN_N = 30
@@ -275,23 +306,66 @@ def monotonicity_check(model):
     return pd.DataFrame(rows)
 
 
+# Anchor neighbourhoods: (label, yards to goal, min seconds, max seconds).
+# Bounds are DERIVED from each neighbourhood's own observed rate rather than
+# hardcoded, so they cannot go stale when the population or seasons change.
+# `own 25, 0:20` was retired: it is backed by 12 drives, whose Wilson interval
+# [0.015, 0.354] could never discriminate between a good model and a bad one.
+ANCHOR_SCENARIOS = [
+    ("own 25, under 3:00, needs TD", 75, 0, 180),
+    ("own 25, 3:00-7:00, needs TD", 75, 180, 420),
+    ("own 40, over 4:00, needs TD", 60, 240, 900),
+    ("own 10-20, any clock, needs TD", 88, 0, 900),
+]
+ANCHOR_YARD_TOLERANCE = 10
+
+
 def anchor_check(model, drives):
-    """Scenarios whose answers are known well enough to falsify the model."""
-    ep_own_25 = median_ep_at(drives, 75)
-    ep_own_40 = median_ep_at(drives, 60)
-    scenarios = [
-        ("own 25, 1:00, needs TD", 60, ep_own_25, 1, ANCHOR_CEILING),
-        ("own 25, 0:20, needs TD", 20, ep_own_25, 1, 0.10),
-        ("own 40, 5:00, needs TD", 300, ep_own_40, 1, 0.80),
-    ]
+    """Two-sided sanity checks on specific, recognisable situations.
+
+    Bounds are Wilson 95% intervals on the observed rate in each neighbourhood,
+    derived at fit time. The model's MEAN PREDICTION OVER THE NEIGHBOURHOOD'S
+    ACTUAL DRIVES is compared against them -- not a point prediction at an
+    invented centre. Predicting at a nominal clock the neighbourhood does not
+    average to was tried and rejected: widening a neighbourhood to reach the
+    support floor drags its centre away from the scenario (the "own 25, ~1:00"
+    band has a median clock of 1:49), so the model gets asked about a situation
+    the observed rate does not describe.
+
+    The previous version was one-sided -- every anchor an upper bound -- so a
+    model UNDERSTATING opponent scoring passed more easily, which is the
+    dangerous direction for a punt decision.
+
+    SCOPE, and this is a real limitation: these catch gross errors, not subtle
+    ones. A Wilson interval at n=60 spans about 0.20, and the model fitted on
+    the wrong population -- 15 points biased against trailing opponents --
+    passes every anchor defined here. Gate 6 (conditional calibration) is the
+    primary defence against population-level bias. An anchor pass is not
+    evidence of calibration.
+    """
     rows = []
-    for label, seconds, ep, needs_td, ceiling in scenarios:
-        p = model.predict(seconds, ep, needs_td)["p_score"]
-        rows.append({
-            "scenario": label,
-            "p_score": round(p, 3),
-            "plausible": p < ceiling,
-        })
+    for label, ytg, min_seconds, max_seconds in ANCHOR_SCENARIOS:
+        near = drives[
+            ((drives.yards_to_goal - ytg).abs() <= ANCHOR_YARD_TOLERANCE)
+            & drives.seconds_left.between(min_seconds, max_seconds)
+            & (drives.needs_td == 1)]
+
+        if len(near) < MIN_BIN_N:
+            # Not a test. Recorded so its absence is visible rather than silent.
+            rows.append({"scenario": label, "n": len(near),
+                         "observed": np.nan, "floor": np.nan,
+                         "ceiling": np.nan, "mean_predicted": np.nan,
+                         "plausible": True, "tested": False})
+            continue
+
+        floor, ceiling = wilson_interval(int(near.scored.sum()), len(near))
+        mean_predicted = float(model.predict_frame(near).p_score.mean())
+        rows.append({"scenario": label, "n": len(near),
+                     "observed": round(float(near.scored.mean()), 3),
+                     "floor": round(floor, 3), "ceiling": round(ceiling, 3),
+                     "mean_predicted": round(mean_predicted, 3),
+                     "plausible": bool(floor <= mean_predicted <= ceiling),
+                     "tested": True})
     return pd.DataFrame(rows)
 
 
@@ -329,11 +403,13 @@ def run_gates(drives):
                            for r in monotone.itertuples()))
 
     anchors = anchor_check(model, drives)
-    ok = bool(anchors.plausible.all())
+    tested = anchors[anchors.tested]
+    ok = bool(tested.plausible.all()) and len(tested) >= 1
     passed &= ok
     lines.append(f"[{'PASS' if ok else 'FAIL'}] 4. anchors          " +
-                 ", ".join(f"{r.scenario} -> {r.p_score:.2f}"
-                           for r in anchors.itertuples()))
+                 ", ".join(f"{r.scenario} -> {r.mean_predicted:.2f} "
+                           f"in [{r.floor:.2f},{r.ceiling:.2f}]"
+                           for r in tested.itertuples()))
 
     thin = calibration[calibration.n < MIN_BIN_N]
     ok = thin.empty
@@ -352,7 +428,11 @@ def main():
                         help="run the five validation gates and exit nonzero on failure")
     args = parser.parse_args()
 
-    drives = load_drives(args.csv, quarter=args.quarter)
+    all_drives = load_drives(args.csv, quarter=args.quarter)
+    drives = decision_population(all_drives)
+    print(f"{len(all_drives)} Q{args.quarter} drives loaded; "
+          f"{len(drives)} in the decision population "
+          f"(trailing or tied, within {MAX_DEFICIT})")
     print(f"{len(drives)} Q{args.quarter} drives, "
           f"seasons {int(drives.season.min())}-{int(drives.season.max())}")
     print(f"score rate: {drives.scored.mean():.3f} overall, "
