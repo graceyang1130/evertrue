@@ -320,16 +320,19 @@ def test_anchor_bounds_are_wide_enough_to_be_a_coarse_check_only(real_drives):
         "check; re-read the SCOPE note on anchor_check")
 
 
-from opp_offense import MIN_FOLD_N, loso_predictions
+from opp_offense import MIN_FOLD_N, loso_folds, loso_predictions
 
 
-def test_loso_predictions_covers_most_of_the_population(real_drives):
+def test_loso_predictions_folds_every_qualifying_season(real_drives):
+    """The invariant is not a coverage percentage -- it is that no qualifying
+    season goes missing. At 85% a silently dropped 2019 (9.3% of drives) or 2026
+    (6.7%) would still have passed."""
     pop = decision_population(real_drives)
+    folds = loso_folds(pop)
     out = loso_predictions(pop)
-    usable = pop.dropna(subset=REQUIRED_FIELDS)
-    # every season with enough drives gets folded; allow a little loss to
-    # seasons too thin to hold out
-    assert len(out) > 0.85 * len(usable)
+    expected = set(folds.loc[folds.folded, "season"])
+    assert set(out.season.unique()) == expected
+    assert len(expected) >= 5
 
 
 def test_loso_predictions_are_probabilities(real_drives):
@@ -351,3 +354,23 @@ def test_loso_predictions_keeps_season_and_outcome_columns(real_drives):
     out = loso_predictions(decision_population(real_drives))
     for column in ["season", "scored", "seconds_left", "score_diff"]:
         assert column in out.columns
+
+
+def test_loso_folds_accounts_for_every_season(real_drives):
+    pop = decision_population(real_drives)
+    folds = loso_folds(pop)
+    usable = pop.dropna(subset=REQUIRED_FIELDS)
+    assert set(folds.season) == set(usable.season.astype(int))
+    assert folds.n.sum() == len(usable)
+
+
+def test_loso_folds_records_why_it_skipped(real_drives):
+    """A skipped fold must say why. Force one by keeping a single season plus a
+    token slice of another, so the small season fails MIN_FOLD_N."""
+    pop = decision_population(real_drives)
+    big = pop[pop.season == 2023]
+    tiny = pop[pop.season == 2019].head(3)
+    folds = loso_folds(pd.concat([big, tiny]))
+    skipped = folds[~folds.folded]
+    assert len(skipped) >= 1
+    assert (skipped.skipped_because.str.len() > 0).all()

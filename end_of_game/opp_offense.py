@@ -216,6 +216,34 @@ def fit(drives):
 MIN_FOLD_N = 20
 
 
+def loso_folds(drives):
+    """Per-season fold status, so a skipped fold leaves a trail.
+
+    A fold is skipped when the held-out season is too small to be worth scoring,
+    or when the remaining training data lacks one of the three outcome classes a
+    multinomial fit needs. Either silently shrinks the coverage every
+    out-of-sample gate rests on, so the reason is recorded rather than left to be
+    inferred from a smaller row count.
+    """
+    usable = drives.dropna(subset=REQUIRED_FIELDS)
+    rows = []
+    for season in sorted(usable.season.unique()):
+        test = usable[usable.season == season]
+        train = usable[usable.season != season]
+        if len(test) < MIN_FOLD_N:
+            reason = (f"held-out fold n={len(test)} below "
+                      f"MIN_FOLD_N={MIN_FOLD_N}")
+        elif train.empty:
+            reason = "no training drives outside this season"
+        elif len(set(_outcomes(train))) < 3:
+            reason = "training set missing an outcome class"
+        else:
+            reason = ""
+        rows.append({"season": int(season), "n": int(len(test)),
+                     "folded": reason == "", "skipped_because": reason})
+    return pd.DataFrame(rows)
+
+
 def loso_predictions(drives):
     """Out-of-fold scoring probabilities, leaving each season out in turn.
 
@@ -228,14 +256,10 @@ def loso_predictions(drives):
     usable = drives.dropna(subset=REQUIRED_FIELDS).copy()
     usable["predicted"] = np.nan
 
-    for season in sorted(usable.season.unique()):
+    folds = loso_folds(drives)
+    for season in folds.loc[folds.folded, "season"]:
         test = usable[usable.season == season]
         train = usable[usable.season != season]
-        if len(test) < MIN_FOLD_N or train.empty:
-            continue
-        # a multinomial fit needs all three outcomes present in training
-        if len(set(_outcomes(train))) < 3:
-            continue
         model = fit(train)
         usable.loc[test.index, "predicted"] = (
             model.predict_frame(test).p_score.to_numpy())
@@ -468,6 +492,10 @@ def main():
           f"seasons {int(drives.season.min())}-{int(drives.season.max())}")
     print(f"score rate: {drives.scored.mean():.3f} overall, "
           f"{drives[drives.seconds_left <= 300].scored.mean():.3f} inside 5:00")
+
+    folds = loso_folds(drives)
+    print("\nLEAVE-ONE-SEASON-OUT FOLDS")
+    print(folds.to_string(index=False))
 
     passed, lines, model = run_gates(drives)
 
