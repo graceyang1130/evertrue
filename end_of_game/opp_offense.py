@@ -142,6 +142,9 @@ OUTCOME_NONE = "NONE"
 # more than the thirtieth 30 seconds. Floored so log stays finite at 0:00.
 MIN_SECONDS = 5.0
 
+# A quarter is 900 seconds; nothing beyond that is a fourth-quarter question.
+MAX_PREDICT_SECONDS = 900.0
+
 
 def design_matrix(frame):
     """Model features, in FEATURE_NAMES order.
@@ -177,6 +180,12 @@ class OppOffenseModel:
         self.n_train = n_train
 
     def predict(self, seconds_left, ep_start, needs_td):
+        if not MIN_SECONDS <= seconds_left <= MAX_PREDICT_SECONDS:
+            raise ValueError(
+                f"seconds_left={seconds_left} is outside [{MIN_SECONDS}, "
+                f"{MAX_PREDICT_SECONDS}]; the clock is floored at "
+                f"{MIN_SECONDS}s internally, so a smaller value would silently "
+                f"return the {MIN_SECONDS}s answer")
         frame = pd.DataFrame([{
             "seconds_left": float(seconds_left),
             "ep_start": float(ep_start),
@@ -204,10 +213,34 @@ class OppOffenseModel:
         )
 
 
-def fit(drives):
-    """Fit the outcome model. Drops drives missing a required field."""
+# scikit-learn regularises by default. C=1.0 is retained rather than chosen -- it
+# is what every gate in this module was measured against -- but the features are
+# unstandardised (log_seconds ~1.6-6.8, ep_start ~-3-6, needs_td 0/1), so the
+# penalty does not fall evenly across them. Any future refit on more data should
+# revisit this deliberately rather than inherit it.
+REGULARISATION_C = 1.0
+
+
+def fit(drives, allow_any_population=False):
+    """Fit the outcome model. Drops drives missing a required field.
+
+    Refuses a frame containing leading offenses or deficits beyond MAX_DEFICIT,
+    because fitting on those is exactly the defect this model was rebuilt to
+    remove -- see DESIGN.md Amendment 2. Pass allow_any_population=True only to
+    deliberately reconstruct the broken model, which two tests do in order to
+    prove the gates detect it.
+    """
+    if not allow_any_population:
+        outside = drives[(drives.score_diff > 0)
+                         | (drives.score_diff < -MAX_DEFICIT)]
+        if len(outside):
+            raise ValueError(
+                f"{len(outside)} of {len(drives)} drives are outside the "
+                f"decision population (leading, or trailing by more than "
+                f"{MAX_DEFICIT}). Call decision_population() first, or pass "
+                f"allow_any_population=True if you intend the broken model.")
     usable = drives.dropna(subset=REQUIRED_FIELDS)
-    estimator = LogisticRegression(max_iter=2000)
+    estimator = LogisticRegression(max_iter=2000, C=REGULARISATION_C)
     estimator.fit(design_matrix(usable), _outcomes(usable))
     return OppOffenseModel(estimator, n_train=len(usable))
 
@@ -273,6 +306,14 @@ def loso_predictions(drives):
 # model this replaces).
 REGIONS = [(None, "all"), (600, "<=10:00"), (300, "<=5:00"), (120, "<=2:00")]
 GATE_REGION_SECONDS = 300
+
+# A bias localised in the clock passes every other gate: AUC is rank-based and so
+# blind to monotone miscalibration, and pooling clocks lets an early-game
+# overstatement cancel a late-game understatement exactly. The shipped model's
+# signed bias runs -0.027 inside 5:00 and +0.033 inside 2:00, cancelling to 0.000
+# overall. This is the original population defect's mechanism one dimension over.
+REGION_CALIBRATION_MAX = 0.06
+GATE_REGIONS_SECONDS = [300, 120]
 
 # What the opponent needs. GATE_BANDS are the sub-populations gate 6 is measured
 # within; DIAGNOSTIC_BANDS are printed for a human to read but never gated.
@@ -393,8 +434,12 @@ MIN_BIN_N = 30
 # yards out (own 25) and the distribution concentrates between 65 and 85, since
 # a team getting the ball back has just received a punt or a kickoff. An earlier
 # card used [80, 65, 50, 35, 20], whose two nearest columns were backed by 0-1
-# drives -- it asked about field positions that do not occur.
-CARD_YARDS_TO_GOAL = [90, 80, 75, 70, 60]
+# drives -- it asked about field positions that do not occur. [90, 80, 75, 70,
+# 60] still printed "--" in its 90 and 60 columns at every clock: support is
+# 14/25 either way, so narrowing to [85, 80, 75, 70, 65] buys no extra
+# supported cells -- it spreads the same 14 across five usable columns instead
+# of three, so a sideline card stops carrying two permanently blank ones.
+CARD_YARDS_TO_GOAL = [85, 80, 75, 70, 65]
 CARD_CLOCKS = [30, 60, 120, 180, 300]
 
 # Below this share of printable cells the card is mostly blanks and the model is
@@ -436,15 +481,16 @@ def card_cells(model, drives):
     for seconds in CARD_CLOCKS:
         for ytg in CARD_YARDS_TO_GOAL:
             near = drives[
-                ((drives.yards_to_goal - ytg).abs() <= 5)
+                (drives.needs_td == 1)
+                & ((drives.yards_to_goal - ytg).abs() <= 5)
                 & ((drives.seconds_left - seconds).abs() <= 120)]
             if len(near) < MIN_BIN_N:
                 rows.append({"seconds": seconds, "yards_to_goal": ytg,
                              "n": int(len(near)), "supported": False,
                              "p_score": np.nan})
                 continue
-            ep = median_ep_at(drives, ytg, seconds_left=seconds,
-                              min_n=MIN_BIN_N)
+            ep = median_ep_at(drives[drives.needs_td == 1], ytg,
+                              seconds_left=seconds, min_n=MIN_BIN_N)
             rows.append({"seconds": seconds, "yards_to_goal": ytg,
                          "n": int(len(near)), "supported": True,
                          "p_score": round(
@@ -507,6 +553,10 @@ ANCHOR_SCENARIOS = [
 ]
 ANCHOR_YARD_TOLERANCE = 10
 
+# Fewer than this many surviving anchors and the gate is nearly meaningless --
+# len(tested) >= 1 let three of four anchors drop out silently.
+MIN_TESTED_ANCHORS = 3
+
 
 def anchor_check(model, drives):
     """Two-sided sanity checks on specific, recognisable situations.
@@ -543,7 +593,7 @@ def anchor_check(model, drives):
             rows.append({"scenario": label, "n": len(near),
                          "observed": np.nan, "floor": np.nan,
                          "ceiling": np.nan, "mean_predicted": np.nan,
-                         "plausible": True, "tested": False})
+                         "plausible": np.nan, "tested": False})
             continue
 
         floor, ceiling = wilson_interval(int(near.scored.sum()), len(near))
@@ -576,15 +626,18 @@ def run_gates(drives):
 
     out_of_fold = loso_predictions(drives)
     regional = regional_performance(out_of_fold)
-    region_row = regional[regional.seconds_limit == GATE_REGION_SECONDS]
-    ok = (not region_row.empty
-          and float(region_row.iloc[0].auc) > MIN_AUC)
+    gated = regional[regional.seconds_limit.isin(GATE_REGIONS_SECONDS)]
+    ok = len(gated) == len(GATE_REGIONS_SECONDS)
+    detail = []
+    for row in gated.itertuples():
+        auc_ok = row.auc > MIN_AUC
+        calib_ok = row.calibration <= REGION_CALIBRATION_MAX
+        ok = ok and auc_ok and calib_ok
+        detail.append(f"{row.region} AUC {row.auc:.3f} calib {row.calibration:.3f}")
     passed &= ok
-    detail = ("no <=5:00 region" if region_row.empty else
-              f"LOSO AUC = {region_row.iloc[0].auc:.3f} "
-              f"(n={int(region_row.iloc[0].n)})")
     lines.append(f"[{'PASS' if ok else 'FAIL'}] 2. discrimination   "
-                 f"{detail}, scored inside 5:00")
+                 + ", ".join(detail)
+                 + f" (AUC>{MIN_AUC}, calib<={REGION_CALIBRATION_MAX})")
 
     monotone = monotonicity_check(model)
     ok = bool(monotone.passed.all())
@@ -595,7 +648,7 @@ def run_gates(drives):
 
     anchors = anchor_check(model, drives)
     tested = anchors[anchors.tested]
-    ok = bool(tested.plausible.all()) and len(tested) >= 1
+    ok = bool(tested.plausible.all()) and len(tested) >= MIN_TESTED_ANCHORS
     passed &= ok
     lines.append(f"[{'PASS' if ok else 'FAIL'}] 4. anchors          " +
                  ", ".join(f"{r.scenario} -> {r.mean_predicted:.2f} "
@@ -632,7 +685,7 @@ def main():
     parser.add_argument("csv", help="PFF play-by-play export")
     parser.add_argument("--quarter", type=int, default=4)
     parser.add_argument("--gates", action="store_true",
-                        help="run the five validation gates and exit nonzero on failure")
+                        help="run the six validation gates and exit nonzero on failure")
     args = parser.parse_args()
 
     all_drives = load_drives(args.csv, quarter=args.quarter)

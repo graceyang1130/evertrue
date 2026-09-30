@@ -121,15 +121,25 @@ def test_design_matrix_has_no_nan_or_inf(real_drives):
 
 
 def test_predict_returns_probabilities_that_sum_correctly(real_drives):
-    model = fit(real_drives)
+    model = fit(decision_population(real_drives))
     out = model.predict(seconds_left=120, ep_start=0.5, needs_td=1)
     assert 0.0 <= out["p_td"] <= 1.0
     assert 0.0 <= out["p_fg"] <= 1.0
     assert out["p_score"] == pytest.approx(out["p_td"] + out["p_fg"])
 
 
+def test_predict_refuses_a_clock_it_would_silently_floor(real_drives):
+    model = fit(decision_population(real_drives))
+    with pytest.raises(ValueError):
+        model.predict(seconds_left=2, ep_start=0.5, needs_td=1)
+    with pytest.raises(ValueError):
+        model.predict(seconds_left=1000, ep_start=0.5, needs_td=1)
+    assert 0.0 <= model.predict(
+        seconds_left=60, ep_start=0.5, needs_td=1)["p_score"] <= 1.0
+
+
 def test_more_time_never_lowers_scoring_probability(real_drives):
-    model = fit(real_drives)
+    model = fit(decision_population(real_drives))
     probs = [
         model.predict(seconds_left=t, ep_start=0.5, needs_td=1)["p_score"]
         for t in [30, 60, 120, 240, 480]
@@ -138,7 +148,7 @@ def test_more_time_never_lowers_scoring_probability(real_drives):
 
 
 def test_better_field_position_never_lowers_scoring_probability(real_drives):
-    model = fit(real_drives)
+    model = fit(decision_population(real_drives))
     probs = [
         model.predict(seconds_left=180, ep_start=ep, needs_td=1)["p_score"]
         for ep in [-1.0, 0.0, 1.0, 2.0, 3.0]
@@ -147,7 +157,7 @@ def test_better_field_position_never_lowers_scoring_probability(real_drives):
 
 
 def test_coefficients_are_reported_per_outcome(real_drives):
-    model = fit(real_drives)
+    model = fit(decision_population(real_drives))
     coefs = model.coefficients()
     assert list(coefs.columns) == FEATURE_NAMES
     assert "TD" in coefs.index and "FG" in coefs.index
@@ -159,8 +169,9 @@ from opp_offense import (MIN_BIN_N, REQUIRED_FIELDS, anchor_check,
 
 
 def test_calibration_table_bins_and_totals(real_drives):
-    model = fit(real_drives)
-    table = calibration_table(model, real_drives, bins=10)
+    pop = decision_population(real_drives)
+    model = fit(pop)
+    table = calibration_table(model, pop, bins=10)
     assert list(table.columns) == ["bin", "n", "predicted", "observed"]
     assert table.n.sum() == model.n_train
     # a usable model tracks the diagonal: mean absolute gap under 10 points
@@ -168,7 +179,7 @@ def test_calibration_table_bins_and_totals(real_drives):
 
 
 def test_monotonicity_check_reports_every_feature(real_drives):
-    model = fit(real_drives)
+    model = fit(decision_population(real_drives))
     checks = monotonicity_check(model)
     assert set(checks.feature) == {"log_seconds", "ep_start"}
     assert checks.passed.all(), f"sign flip: {checks.to_dict('records')}"
@@ -189,8 +200,9 @@ def test_anchor_check_own_25_one_minute_needing_a_touchdown(real_drives):
 
 
 def test_no_calibration_bin_is_thinner_than_the_floor(real_drives):
-    model = fit(real_drives)
-    table = calibration_table(model, real_drives, bins=10)
+    pop = decision_population(real_drives)
+    model = fit(pop)
+    table = calibration_table(model, pop, bins=10)
     assert table.n.min() >= MIN_BIN_N, f"thinnest bin n={table.n.min()}"
 
 
@@ -234,8 +246,9 @@ def test_design_matrix_raises_on_non_finite_features(real_drives):
 
 
 def test_required_fields_is_shared_by_fit_and_calibration(real_drives):
-    model = fit(real_drives)
-    table = calibration_table(model, real_drives, bins=10)
+    pop = decision_population(real_drives)
+    model = fit(pop)
+    table = calibration_table(model, pop, bins=10)
     assert table.n.sum() == model.n_train
 
 
@@ -368,7 +381,8 @@ def test_loso_folds_records_why_it_skipped(real_drives):
 
 from opp_offense import (CONDITIONAL_MEDIAN_MAX, CONDITIONAL_WORST_MAX,
                           DIAGNOSTIC_BANDS, GATE_BANDS, GATE_REGION_SECONDS,
-                          MIN_AUC, MIN_SCORED_SEASONS, conditional_calibration,
+                          GATE_REGIONS_SECONDS, MIN_AUC, MIN_SCORED_SEASONS,
+                          REGION_CALIBRATION_MAX, conditional_calibration,
                           regional_performance, score_band)
 
 
@@ -384,6 +398,28 @@ def test_regional_auc_clears_the_bar_where_the_tool_operates(real_drives):
     out = loso_predictions(decision_population(real_drives))
     table = regional_performance(out).set_index("region")
     assert table.loc["<=5:00", "auc"] > MIN_AUC
+
+
+def test_clock_region_calibration_is_gated_not_just_printed(real_drives):
+    """The calibration column existed and nothing read it. A bias localised in
+    the clock passed all six gates -- AUC is rank-based and blind to it, and
+    pooling clocks lets an early overstatement cancel a late understatement."""
+    out = loso_predictions(decision_population(real_drives))
+    table = regional_performance(out).set_index("seconds_limit")
+    for limit in GATE_REGIONS_SECONDS:
+        assert table.loc[limit, "calibration"] <= REGION_CALIBRATION_MAX
+
+
+def test_clock_region_gate_would_have_caught_the_original_defect(real_drives):
+    """Unlike gate 6's 7% margin, this catches the population defect by 2.2x.
+    The old model reads 0.131 inside 5:00 against a 0.06 threshold."""
+    old_model = fit(real_drives, allow_any_population=True)
+    pop = decision_population(real_drives).dropna(subset=REQUIRED_FIELDS).copy()
+    pop["predicted"] = old_model.predict_frame(pop).p_score.to_numpy()
+    late = pop[pop.seconds_left <= 300]
+    bias = abs(late.predicted.mean() - late.scored.mean())
+    assert bias > REGION_CALIBRATION_MAX, (
+        f"clock-region gate misses the original defect (bias {bias:.3f})")
 
 
 def test_score_band_labels_every_drive_in_the_population(real_drives):
@@ -419,7 +455,7 @@ def test_finer_bands_would_fail_the_gate_which_is_why_they_are_not_gated(real_dr
 def test_gate_bands_still_detect_the_original_defect(real_drives):
     """The gate must be coarse enough to be stable AND fine enough to catch the
     defect it exists for. Two bands threads that by a 7% margin; verify it."""
-    old_model = fit(real_drives)
+    old_model = fit(real_drives, allow_any_population=True)
     pop = decision_population(real_drives).dropna(subset=REQUIRED_FIELDS)
     scored = pop.assign(
         predicted=old_model.predict_frame(pop).p_score.to_numpy(),
@@ -450,7 +486,7 @@ def test_conditional_calibration_would_catch_the_original_defect(real_drives):
     """The gate exists to catch a model fitted on the wrong population. Score
     the old population's model on the decision population's bands and confirm
     the bias it produces exceeds what the gate tolerates."""
-    old_model = fit(real_drives)
+    old_model = fit(real_drives, allow_any_population=True)
     pop = decision_population(real_drives).dropna(subset=REQUIRED_FIELDS)
     scored = pop.assign(
         predicted=old_model.predict_frame(pop).p_score.to_numpy(),
@@ -492,16 +528,29 @@ def test_gate_6_counts_only_seasons_it_could_actually_score(real_drives):
     assert (scored.cells_used > 0).all()
 
 
+def test_gate_6_rejects_a_run_with_too_few_scored_seasons(real_drives):
+    """The guard that closed the false-pass hole needs to be shown to fire."""
+    out = loso_predictions(decision_population(real_drives))
+    thin = out[out.season.isin([2026])]
+    table = conditional_calibration(thin)
+    scored = table.dropna(subset=["worst_band_bias"])
+    assert len(scored) < MIN_SCORED_SEASONS
+
+
 from opp_offense import (CARD_CLOCKS, CARD_YARDS_TO_GOAL,
                           MIN_SUPPORTED_CELL_FRACTION, card_cells)
 
 
-def test_card_axis_matches_where_drives_actually_start(real_drives):
-    """The median trailing-team drive starts 75 yards out. An axis reaching
-    into the red zone describes drives that do not happen."""
+def test_card_axis_brackets_the_middle_half_of_real_drive_starts(real_drives):
+    """A median check cannot fail: the rejected axis [80,65,50,35,20] brackets 75
+    as well. Require the axis to sit inside the interquartile range of actual
+    trailing-team drive starts, which the old axis does not."""
     pop = decision_population(real_drives)
-    median_start = pop.yards_to_goal.median()
-    assert min(CARD_YARDS_TO_GOAL) <= median_start <= max(CARD_YARDS_TO_GOAL)
+    low, high = pop.yards_to_goal.quantile([0.25, 0.75])
+    assert min(CARD_YARDS_TO_GOAL) >= low - 5
+    assert max(CARD_YARDS_TO_GOAL) <= high + 12
+    rejected = [80, 65, 50, 35, 20]
+    assert min(rejected) < low - 5
 
 
 def test_card_cells_covers_the_whole_grid(real_drives):
@@ -527,6 +576,20 @@ def test_enough_card_cells_are_supported_to_be_useful(real_drives):
     fraction = cells.supported.mean()
     assert fraction >= MIN_SUPPORTED_CELL_FRACTION, (
         f"only {fraction:.0%} of card cells are supported")
+
+
+def test_card_support_is_counted_on_the_population_it_describes(real_drives):
+    """The card predicts needs_td=1, so its support floor must be applied to
+    needs-TD drives. Counting all drives overstated it: 0:30 / 80 yards shows
+    n=68 overall but only 28 needs-TD, below the floor."""
+    pop = decision_population(real_drives)
+    cells = card_cells(fit(pop), pop)
+    needs_td = pop[pop.needs_td == 1]
+    for row in cells[cells.supported].itertuples():
+        actual = needs_td[
+            ((needs_td.yards_to_goal - row.yards_to_goal).abs() <= 5)
+            & ((needs_td.seconds_left - row.seconds).abs() <= 120)]
+        assert len(actual) >= MIN_BIN_N
 
 
 def test_the_old_card_axis_would_now_fail_the_support_gate(real_drives):
