@@ -368,7 +368,7 @@ def test_loso_folds_records_why_it_skipped(real_drives):
 
 from opp_offense import (CONDITIONAL_MEDIAN_MAX, CONDITIONAL_WORST_MAX,
                           DIAGNOSTIC_BANDS, GATE_BANDS, GATE_REGION_SECONDS,
-                          MIN_AUC, conditional_calibration,
+                          MIN_AUC, MIN_SCORED_SEASONS, conditional_calibration,
                           regional_performance, score_band)
 
 
@@ -434,7 +434,8 @@ def test_gate_bands_still_detect_the_original_defect(real_drives):
 def test_conditional_calibration_reports_per_season(real_drives):
     out = loso_predictions(decision_population(real_drives))
     table = conditional_calibration(out)
-    assert list(table.columns) == ["season", "n", "worst_band_bias"]
+    assert list(table.columns) == ["season", "n", "cells_used",
+                                   "cells_skipped", "worst_band_bias"]
     assert len(table) >= 5
 
 
@@ -459,3 +460,33 @@ def test_conditional_calibration_would_catch_the_original_defect(real_drives):
         worst = max(worst, abs(cell.predicted.mean() - cell.scored.mean()))
     assert worst > CONDITIONAL_MEDIAN_MAX, (
         f"old model's worst band bias {worst:.3f} does not exceed the gate")
+
+
+def test_conditional_calibration_records_skipped_cells(real_drives):
+    """A thin cell must leave a trace. On the diagnostic bands, season 2026's
+    'down 1-3' cell has n=3 and is dropped; that must be counted, not hidden."""
+    out = loso_predictions(decision_population(real_drives))
+    fine = conditional_calibration(out, DIAGNOSTIC_BANDS)
+    assert "cells_skipped" in fine.columns
+    assert fine.cells_skipped.sum() >= 1
+    coarse = conditional_calibration(out)
+    assert coarse.cells_skipped.sum() == 0
+
+
+def test_a_season_with_no_usable_cell_reports_nan_not_zero(real_drives):
+    """Zero would enter the gate as perfect calibration and pull the median
+    down. A season with no evidence must not count as a season that passed."""
+    out = loso_predictions(decision_population(real_drives))
+    # keep one season, thinned below MIN_BAND_CELL_N in every band
+    thin = out[out.season == 2026].head(3)
+    table = conditional_calibration(thin)
+    assert table.worst_band_bias.isna().all()
+    assert (table.cells_used == 0).all()
+
+
+def test_gate_6_counts_only_seasons_it_could_actually_score(real_drives):
+    out = loso_predictions(decision_population(real_drives))
+    table = conditional_calibration(out)
+    scored = table.dropna(subset=["worst_band_bias"])
+    assert len(scored) >= MIN_SCORED_SEASONS
+    assert (scored.cells_used > 0).all()

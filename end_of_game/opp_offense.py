@@ -299,6 +299,10 @@ MIN_BAND_CELL_N = 5
 CONDITIONAL_MEDIAN_MAX = 0.10
 CONDITIONAL_WORST_MAX = 0.20
 
+# Gate 6 needs this many seasons with at least one usable band cell before its
+# median means anything. Fewer than this and the gate is measuring noise.
+MIN_SCORED_SEASONS = 5
+
 
 def regional_performance(out_of_fold):
     """Out-of-sample discrimination and calibration by clock region."""
@@ -348,17 +352,27 @@ def conditional_calibration(out_of_fold, bands=GATE_BANDS):
     because the affected band is a third of the population. A bias confined to a
     narrower slice would be diluted below the threshold. Call this with
     DIAGNOSTIC_BANDS to see the finer structure; do not gate on that result.
+
+    A season with no usable cell reports NaN, never 0.0. Reporting zero would
+    enter the gate as a perfectly calibrated season and pull the median down --
+    a season with no evidence is not a season that passed. `cells_skipped`
+    records what was dropped so the loss is visible rather than inferred.
     """
     frame = out_of_fold.assign(band=score_band(out_of_fold, bands))
     rows = []
     for season, block in frame.groupby("season"):
         worst = 0.0
+        used = 0
+        skipped = 0
         for _, cell in block.groupby("band", observed=True):
             if len(cell) < MIN_BAND_CELL_N:
+                skipped += 1
                 continue
+            used += 1
             worst = max(worst, abs(cell.predicted.mean() - cell.scored.mean()))
         rows.append({"season": int(season), "n": int(len(block)),
-                     "worst_band_bias": round(worst, 3)})
+                     "cells_used": used, "cells_skipped": skipped,
+                     "worst_band_bias": round(worst, 3) if used else np.nan})
     return pd.DataFrame(rows)
 
 
@@ -556,14 +570,18 @@ def run_gates(drives):
                  f"{len(thin)} calibration bins under n=30")
 
     conditional = conditional_calibration(out_of_fold)
-    median_bias = float(conditional.worst_band_bias.median())
-    worst_bias = float(conditional.worst_band_bias.max())
-    ok = (median_bias < CONDITIONAL_MEDIAN_MAX
+    scored = conditional.dropna(subset=["worst_band_bias"])
+    median_bias = float(scored.worst_band_bias.median()) if len(scored) else float("nan")
+    worst_bias = float(scored.worst_band_bias.max()) if len(scored) else float("nan")
+    ok = (len(scored) >= MIN_SCORED_SEASONS
+          and median_bias < CONDITIONAL_MEDIAN_MAX
           and worst_bias < CONDITIONAL_WORST_MAX)
     passed &= ok
     lines.append(f"[{'PASS' if ok else 'FAIL'}] 6. cond. calibration "
                  f"median {median_bias:.3f} (<{CONDITIONAL_MEDIAN_MAX}), "
-                 f"worst {worst_bias:.3f} (<{CONDITIONAL_WORST_MAX})")
+                 f"worst {worst_bias:.3f} (<{CONDITIONAL_WORST_MAX}), "
+                 f"{len(scored)}/{len(conditional)} seasons scored, "
+                 f"{int(conditional.cells_skipped.sum())} cells skipped")
 
     return passed, lines, model
 
