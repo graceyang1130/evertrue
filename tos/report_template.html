@@ -1,0 +1,1576 @@
+<title>Brown Timeout Decisions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a sideline decision board. Three rules up top, then one section per
+   decision: the rule in words, the chart that backs it, the table behind it. */
+:root {
+  --bg: #f5f4f1;
+  --surface: #fcfcfb;
+  --ink: #211915;
+  --ink-2: #57504a;
+  --muted: #847e77;
+  --grid: #e3e1da;
+  --axis: #c3c2b7;
+  --line: rgba(33, 25, 21, 0.11);
+  --accent: #a3171c;
+  --warn: #c7700f;
+  --zero: #eceae4;
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s3: #1baf7a;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121110; --surface: #1a1a19; --ink: #f3efea; --ink-2: #c3c2b7;
+    --muted: #8f8a83; --grid: #2c2c2a; --axis: #3a3936;
+    --line: rgba(255, 255, 255, 0.11); --accent: #e5484d; --warn: #f0a13a;
+    --zero: #262624; --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+    --scheme: dark; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121110; --surface: #1a1a19; --ink: #f3efea; --ink-2: #c3c2b7;
+  --muted: #8f8a83; --grid: #2c2c2a; --axis: #3a3936;
+  --line: rgba(255, 255, 255, 0.11); --accent: #e5484d; --warn: #f0a13a;
+  --zero: #262624; --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+  --scheme: dark; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-inline: 20px;
+  padding-block: 28px 64px;
+  display: grid;
+  gap: 56px;
+}
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.05;
+  margin: 0;
+  text-wrap: balance;
+  letter-spacing: 0.01em;
+}
+h1 { font-size: clamp(38px, 6vw, 56px); text-transform: uppercase; }
+h2 { font-size: clamp(26px, 3.6vw, 34px); text-transform: uppercase; }
+h3 { font-size: 20px; text-transform: uppercase; letter-spacing: 0.03em; }
+p { margin: 0; max-width: 66ch; }
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+/* header with a yard-line hash strip */
+header { display: grid; gap: 14px; }
+header .lede { color: var(--ink-2); font-size: 17px; }
+.hash {
+  height: 14px;
+  border-top: 2px solid var(--ink);
+  background:
+    repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 10%) top left / 100% 7px no-repeat;
+  opacity: 0.85;
+}
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.answer {
+  border-left: 3px solid var(--accent);
+  padding: 4px 0 4px 16px;
+  display: grid;
+  gap: 6px;
+  max-width: 70ch;
+}
+.answer .label {
+  font-family: var(--font-display); font-weight: 600; font-size: 13px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.answer p { font-size: 18px; line-height: 1.5; color: var(--ink); }
+
+section { display: grid; gap: 18px; }
+section > header { gap: 8px; }
+
+/* the three sideline rules */
+.rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.rule {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 18px 18px 20px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+}
+.rule .when {
+  font-family: var(--font-display); font-weight: 600; font-size: 13px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.rule .call { font-family: var(--font-display); font-weight: 700; font-size: 26px; line-height: 1.05; text-transform: uppercase; }
+.rule .figure { font-family: var(--font-display); font-weight: 700; font-size: 44px; line-height: 1; }
+.rule .figure small { font-size: 18px; font-weight: 600; color: var(--muted); margin-left: 4px; }
+.rule p { font-size: 14px; color: var(--ink-2); }
+
+/* chart cards */
+figure { margin: 0; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 16px 16px 12px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  position: relative;
+}
+.chart-scroll { overflow-x: auto; }
+.chart-scroll svg { display: block; width: 100%; min-width: 560px; height: auto; }
+figcaption { font-size: 13px; color: var(--muted); max-width: 80ch; }
+svg text { font-family: var(--font-body); }
+svg .tick { fill: var(--muted); font-size: 11px; }
+svg .rowlabel { fill: var(--ink-2); font-size: 11.5px; }
+svg .axis-title { fill: var(--muted); font-size: 11.5px; letter-spacing: 0.04em; }
+svg .value { fill: var(--ink); font-size: 12px; font-family: var(--font-data); }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.control { display: flex; align-items: center; gap: 8px; }
+.control > span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 6px; overflow: hidden; }
+.seg button {
+  font: 500 13px var(--font-body);
+  color: var(--ink-2);
+  background: transparent;
+  border: 0;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--axis); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.seg button:focus-visible, .toggle input:focus-visible, button.link:focus-visible {
+  outline: 2px solid var(--s1); outline-offset: 2px;
+}
+.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+button.link {
+  font: 500 13px var(--font-body); color: var(--ink-2); background: none; border: 1px solid var(--axis);
+  border-radius: 6px; padding: 5px 10px; cursor: pointer; justify-self: start;
+}
+
+/* legends */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 13px; color: var(--ink-2); }
+.legend .item { display: inline-flex; align-items: center; gap: 7px; }
+.swatch-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.ramp { width: 160px; height: 10px; border-radius: 2px; display: inline-block; }
+.ramp-wrap { display: inline-grid; gap: 2px; }
+.ramp-ticks { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-family: var(--font-data); }
+.zero-swatch { width: 14px; height: 10px; border-radius: 2px; display: inline-block; background: var(--zero); border: 1px solid var(--line); }
+.keep-swatch { width: 9px; height: 9px; display: inline-block; background: var(--accent); transform: rotate(45deg); }
+
+/* tooltip */
+.tip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  min-width: 180px;
+  max-width: 260px;
+  z-index: 5;
+}
+.tip .big { font-family: var(--font-data); font-weight: 500; font-size: 15px; color: var(--ink); }
+.tip .sub { color: var(--muted); }
+
+/* tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.tile {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  padding: 14px 16px; display: grid; gap: 4px; min-width: 0;
+}
+.tile .label { font-size: 13px; color: var(--muted); }
+.tile .value { font-family: var(--font-display); font-weight: 700; font-size: 36px; line-height: 1.05; }
+.tile .compare { font-size: 13px; color: var(--ink-2); }
+
+/* tables */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+caption { text-align: left; font-family: var(--font-display); font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: 0.03em; padding-bottom: 8px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { font-size: 12px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+td.n, th.n { text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  font-size: 12.5px; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line);
+}
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip.ok { color: var(--ink-2); }
+.chip.ok::before { background: var(--s3); }
+.chip.warn { color: var(--ink); border-color: var(--warn); }
+.chip.warn::before { background: var(--warn); }
+
+.two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; align-items: start; }
+.method { display: grid; gap: 10px; }
+.method ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; max-width: 78ch; }
+.method li { color: var(--ink-2); }
+.method code { font-family: var(--font-data); font-size: 13px; }
+footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; }
+
+/* the math section */
+.formula {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+}
+.formula-line {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(21px, 3vw, 30px);
+  text-transform: uppercase;
+  line-height: 1.15;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+}
+.formula-line .op { color: var(--accent); }
+.formula .two-col p, .strategy li { font-size: 14.5px; color: var(--ink-2); }
+.strategy ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
+table.rule-grid th, table.rule-grid td { text-align: center; }
+table.rule-grid th:first-child, table.rule-grid td:first-child { text-align: left; }
+.pill {
+  display: inline-block; min-width: 64px; padding: 2px 10px; border-radius: 999px;
+  font-weight: 600; font-size: 13px; text-align: center;
+}
+.pill.call { background: var(--s1); color: #ffffff; }
+.pill.wait { border: 1.5px solid var(--s3); color: var(--ink); }
+
+/* selects and extra legend swatches */
+select {
+  font: 500 13px var(--font-body);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--axis);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+select:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+select:disabled { opacity: 0.45; }
+.sq-swatch { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+.hatch-swatch {
+  width: 14px; height: 10px; display: inline-block; border-radius: 2px; border: 1px solid var(--line);
+  background: repeating-linear-gradient(45deg, var(--axis) 0 1.5px, transparent 1.5px 5px);
+}
+.outline-swatch { width: 14px; height: 10px; display: inline-block; border-radius: 2px; border: 1.5px solid var(--axis); }
+
+@media (max-width: 520px) {
+  body { font-size: 14px; }
+  .page { padding-inline: 16px; gap: 44px; }
+  .rule .figure { font-size: 38px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .seg button { transition: background 120ms ease, color 120ms ease; }
+}
+</style>
+
+<!--
+  EDITING THIS PAGE
+  Every sentence on the page is plain HTML below: change any wording you like.
+  In report_template.html, numbers written in double curly braces are filled
+  in from the data when build_report.py runs. The charts are drawn by the
+  script at the bottom of the file; chart labels and hover text live there.
+-->
+<div class="page">
+  <header>
+    <div class="eyebrow">Brown Football · Game management</div>
+    <h1>Brown Timeout Decisions</h1>
+    <p class="lede">When should we use a timeout, and when should we save it? We looked at every FBS and FCS game since 2023 to put a number on what a timeout is actually worth, worked out the best strategy on paper, and checked it against what teams really do.</p>
+    <div class="hash" aria-hidden="true"></div>
+    <div class="meta">
+      <span>Every FBS and FCS game, {{first_season}} to {{last_season}} ({{last_season}} through week {{last_week}})</span>
+      <span>{{games}} games</span>
+      <span>{{timeouts}} timeouts</span>
+      <span>Data: PFF Ultimate</span>
+    </div>
+  </header>
+
+  <div class="answer">
+    <div class="label">The short answer</div>
+    <p>A timeout's real job is stopping the clock, and that only matters when we are behind late in the game. For the first three quarters, a timeout is worth far less than five yards, so use one rather than take a delay of game. When we are behind late and time gets tight, call timeout right after the whistle, starting as soon as they have no more snaps left before a punt than we have timeouts. Time is tight when, even if they run out the clock, we would get the ball back with less than about {{need}}, which is how long most hurry-up scoring drives take. Teams often wait too long, and so has Brown.</p>
+  </div>
+
+  <section aria-labelledby="rules-h">
+    <header>
+      <h2 id="rules-h">Four calls for the sideline</h2>
+    </header>
+    <div class="rules">
+      <article class="rule">
+        <div class="when">First three quarters</div>
+        <div class="call">Use it, don't take the flag</div>
+        <div class="figure">{{timeout_value}}<small>vs. {{pen_low}} to {{pen_high}} for 5 yards</small></div>
+        <p>Saving a timeout for later only adds about {{timeout_value}} to our chance of winning. A 5-yard delay of game costs {{pen_low}} to {{pen_high}}. If the play clock is about to run out, call timeout.</p>
+      </article>
+      <article class="rule">
+        <div class="when">Behind late, their ball</div>
+        <div class="call">Call it right after the whistle</div>
+        <div class="figure">{{secs_def}} sec<small>saved per timeout</small></div>
+        <p>Once time is tight, start as soon as their snaps left before a punt are no more than our timeouts, and never let the clock run first. Teams do this only {{dr_all_pct}} of the time. Brown did it {{brown_called}} times in {{brown_should}} chances.</p>
+      </article>
+      <article class="rule">
+        <div class="when">Behind late, our ball</div>
+        <div class="call">Down two scores? Save them</div>
+        <div class="figure">{{secs_def}} vs {{secs_ball}}<small>seconds saved</small></div>
+        <p>In our two-minute offense a timeout only saves about {{secs_ball}} seconds, because we are already hurrying. If we will need the ball back after this drive, the same timeout saves about {{secs_def}} seconds on defense.</p>
+      </article>
+      <article class="rule">
+        <div class="when">Close losses</div>
+        <div class="call">Use them all</div>
+        <div class="figure">{{close_unused}} of {{close_n}}<small>ended with one unused</small></div>
+        <p>Brown finished {{close_unused}} of its {{close_n}} close losses since {{first_season}} (lost by 8 or less) with a timeout it never used. Across college football it happens in about {{close_all_share}} of close losses.</p>
+      </article>
+    </div>
+  </section>
+
+  <section aria-labelledby="math-h">
+    <header>
+      <div class="eyebrow">The theory</div>
+      <h2 id="math-h">The math behind a timeout</h2>
+      <p>A timeout does one thing the scoreboard cares about: it stops the clock. So its value comes down to simple arithmetic.</p>
+    </header>
+    <div class="formula">
+      <div class="formula-line">
+        <span>Value of a timeout</span><span class="op">=</span>
+        <span>seconds it saves</span><span class="op">&times;</span>
+        <span>what one second is worth right now</span>
+      </div>
+      <div class="two-col">
+        <div>
+          <h3>Seconds it saves</h3>
+          <p>When a team is running out the clock, each snap takes about {{kill_total}} seconds: {{kill_live}} for the play and {{kill_dead}} between plays. A timeout wipes out the time between plays, so on defense it saves about {{secs_def}} seconds. In our two-minute offense we are already hurrying, so a timeout saves only about {{secs_ball}}.</p>
+        </div>
+        <div>
+          <h3>What a second is worth</h3>
+          <p>Early in a game, almost nothing, because there is plenty of time left. Late in a close game, a lot. Down 3 with 2:00 left and the other team holding the ball, each second is worth about {{ex_per_second}} in chance of winning, so one timeout is worth about {{ex_value}}.</p>
+        </div>
+      </div>
+    </div>
+
+    <figure class="card" id="tl-card">
+      <h3>Their next three stops, with and without our timeouts</h3>
+      <p class="small muted">They have 2nd down with 2:30 left and are running out the clock. Bars use the real average times for teams running out the clock.</p>
+      <div class="legend" id="tl-legend"></div>
+      <div class="chart-scroll"><svg id="timeline" role="img" aria-label="Clock used by their next three snaps with and without our timeouts"></svg></div>
+      <figcaption id="tl-caption"></figcaption>
+    </figure>
+
+    <div class="two-col">
+      <div class="card strategy">
+        <h3>If they are ahead, their best play</h3>
+        <ul>
+          <li>Snap with the play clock near zero. Every second left on it is a second they didn't burn.</li>
+          <li>Run the ball and stay in bounds.</li>
+          <li>Kneel when the clock allows. Each kneel-down uses about {{kneel_total}} seconds.</li>
+          <li>Don't call timeouts late. It only gives us time back.</li>
+        </ul>
+      </div>
+      <div class="card strategy">
+        <h3>If we are behind, our best answer</h3>
+        <ul>
+          <li>Only bother once time is tight: if they ran the clock on every snap left before their punt, we would get the ball back with less than about {{need}}. Three out of four hurry-up scoring drives finish inside that. Before then, a timeout saved is as good as one used.</li>
+          <li>On defense, call timeout the moment the whistle blows. Waiting 20 seconds and then calling it throws those 20 seconds away.</li>
+          <li>Start once their snaps left before a punt are no more than our timeouts (table below). Before that, waiting a down costs nothing: if they get a first down, we still have the timeout for the next set of downs.</li>
+          <li>Use them on defense before offense: about {{secs_def}} seconds saved instead of {{secs_ball}}.</li>
+          <li>If the clock already stopped (incomplete pass, out of bounds, change of possession), don't call one.</li>
+          <li>Before halftime, timeouts don't carry over. In the last 2:00, use them whenever the extra time could get us points.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>When to start calling them on defense</h3>
+      <p class="small muted">Their snaps left before a punt: 4 before a 1st-down snap, 3 before 2nd down, 2 before 3rd, 1 before 4th. Once time is tight, call when we have at least that many timeouts.</p>
+      <div class="table-wrap">
+        <table class="rule-grid">
+          <thead>
+            <tr><th>Timeouts we have</th><th>Their next snap: 1st down</th><th>2nd down</th><th>3rd down</th><th>4th down</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>3</td><td><span class="pill wait">Wait</span></td><td><span class="pill call">Call</span></td><td><span class="pill call">Call</span></td><td><span class="pill call">Call</span></td></tr>
+            <tr><td>2</td><td><span class="pill wait">Wait</span></td><td><span class="pill wait">Wait</span></td><td><span class="pill call">Call</span></td><td><span class="pill call">Call</span></td></tr>
+            <tr><td>1</td><td><span class="pill wait">Wait</span></td><td><span class="pill wait">Wait</span></td><td><span class="pill wait">Wait</span></td><td><span class="pill call">Call</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="rec-h">
+    <header>
+      <div class="eyebrow">Theory plus our data</div>
+      <h2 id="rec-h">When should we call timeout?</h2>
+      <p>A lookup card for the 4th quarter, laid out like our 4th-down sheet. Pick the situation above the card. Each square shows how much time will be left on the clock when we should start calling timeouts, for that down and distance and that spot on the field. It combines the math above with what we measured: how many seconds a timeout really saves, how long a hurry-up scoring drive takes, and how much a second is worth at each score and time.</p>
+    </header>
+    <figure class="card" id="rec-card">
+      <div class="controls">
+        <div class="control"><span>Who has the ball</span>
+          <div class="seg" role="group" aria-label="Who has the ball">
+            <button type="button" data-side="them" aria-pressed="true">They do</button>
+            <button type="button" data-side="us" aria-pressed="false">We do</button>
+          </div>
+        </div>
+        <div class="control"><span>Score</span><select id="rec-lead" aria-label="Score"></select></div>
+        <div class="control"><span>Timeouts we have</span>
+          <div class="seg" role="group" aria-label="Timeouts we have">
+            <button type="button" data-k="1" aria-pressed="false">1</button>
+            <button type="button" data-k="2" aria-pressed="false">2</button>
+            <button type="button" data-k="3" aria-pressed="true">3</button>
+          </div>
+        </div>
+        <div class="control"><span>Teams</span>
+          <select id="rec-strength" aria-label="Team strength">
+            <option value="0">Evenly matched</option>
+            <option value="7">We're better (by 7 a game)</option>
+            <option value="-7">They're better (by 7 a game)</option>
+          </select>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="control"><span>View</span>
+          <div class="seg" role="group" aria-label="View">
+            <button type="button" data-view="card" aria-pressed="true">Card</button>
+            <button type="button" data-view="grid" aria-pressed="false">By score and time</button>
+          </div>
+        </div>
+        <div class="control" id="rec-situation" hidden><span>Situation</span>
+          <select id="rec-row" aria-label="Down and distance"></select>
+          <select id="rec-yard" aria-label="Ball on"></select>
+        </div>
+        <label class="toggle" for="rec-numbers" id="rec-numbers-wrap" hidden><input type="checkbox" id="rec-numbers"> Show numbers</label>
+      </div>
+      <div class="legend" id="rec-legend"></div>
+      <div class="chart-scroll"><svg id="rec" role="img" aria-labelledby="rec-h"></svg></div>
+      <figcaption id="rec-caption"></figcaption>
+      <div class="tip" id="rec-tip" hidden></div>
+    </figure>
+  </section>
+
+  <section aria-labelledby="pen-h">
+    <header>
+      <div class="eyebrow">Play clock about to run out</div>
+      <h2 id="pen-h">Call timeout or take the delay of game?</h2>
+      <p>When the play clock is about to hit zero, we either call timeout or take a delay of game. Outside the final few minutes, the timeout is the better choice in every situation we checked. The penalty lowers our chance of winning by {{pen_low}} to {{pen_high}}, depending on the down and where we are on the field. A timeout saved for later is worth only about {{timeout_value}}. Late in games the card above shows the answer on hover.</p>
+    </header>
+    <figure class="card" id="pen-card">
+      <div class="chart-scroll"><svg id="pen" role="img" aria-labelledby="pen-h"></svg></div>
+      <figcaption>Tie game in the 3rd quarter, evenly matched teams. Each bar is how much a 5-yard delay of game lowers our chance of winning from that spot. The red line is what a timeout is worth if we save it for the end of a close game.</figcaption>
+      <div class="tip" id="pen-tip" hidden></div>
+    </figure>
+  </section>
+
+  <section aria-labelledby="pt-h">
+    <header>
+      <div class="eyebrow">Running out the clock</div>
+      <h2 id="pt-h">How long does a play take when a team runs out the clock?</h2>
+      <p>When a team is ahead late and running out the clock (PFF marks these snaps as four-minute offense), each snap takes about {{kill_total}} seconds, compared with {{normal_total}} in a normal series. The play itself doesn't get longer: snap to whistle is about {{kill_live}} seconds either way. All of the extra time comes between plays, about {{kill_dead}} seconds instead of {{normal_dead}}.</p>
+    </header>
+    <div class="tiles">
+      <div class="tile">
+        <div class="label">Each snap when running out the clock</div>
+        <div class="value">{{kill_total}} sec</div>
+        <div class="compare">{{kill_live}} for the play and {{kill_dead}} between plays</div>
+      </div>
+      <div class="tile">
+        <div class="label">Play clock still left at the snap</div>
+        <div class="value">{{four_left}} sec</div>
+        <div class="compare">Only {{four_share3}} of these snaps come with 3 seconds or less left. Snapping at 1 would burn about {{extra_per_snap}} more seconds a snap, {{extra_per_set}} over a set of downs.</div>
+      </div>
+      <div class="tile">
+        <div class="label">Each kneel-down</div>
+        <div class="value">{{kneel_total}} sec</div>
+        <div class="compare">including the time before the snap</div>
+      </div>
+    </div>
+    <figure class="card" id="pt-card">
+      <div class="controls">
+        <div class="control"><span>Teams</span>
+          <div class="seg" role="group" aria-label="Which teams">
+            <button type="button" data-group="all" aria-pressed="true">All FBS &amp; FCS</button>
+            <button type="button" data-group="ivy" aria-pressed="false">Ivy</button>
+            <button type="button" data-group="brown" aria-pressed="false">Brown</button>
+          </div>
+        </div>
+      </div>
+      <div class="legend" id="pt-legend"></div>
+      <div class="chart-scroll"><svg id="pt" role="img" aria-label="Seconds per snap by situation"></svg></div>
+      <figcaption>Average seconds per snap when the clock keeps running after the play. Rows marked "few snaps" have under 30 plays behind them.</figcaption>
+      <div class="tip" id="pt-tip" hidden></div>
+    </figure>
+    <figure class="card" id="pc-card">
+      <h3>Play clock left at the snap</h3>
+      <div class="legend" id="pc-legend"></div>
+      <div class="chart-scroll"><svg id="pclock" role="img" aria-label="Seconds left on the play clock at the snap"></svg></div>
+      <figcaption>Share of snaps by seconds left on the play clock, when the clock kept running after the previous play. Teams running out the clock snap later than usual, but many still leave several seconds unused.</figcaption>
+      <div class="tip" id="pc-tip" hidden></div>
+    </figure>
+  </section>
+
+  <section aria-labelledby="real-h">
+    <header>
+      <div class="eyebrow">Theory vs. reality</div>
+      <h2 id="real-h">Do teams call timeout when they should?</h2>
+      <p>We checked every snap in the last 5:00 where a team was behind by 1 to 16, the other team had the ball, the clock was running, and the math said to call timeout: time was tight (even if they ran the clock, the trailing team would get the ball back with less than {{need}}, or twice that when down two scores), and their snaps left before a punt were no more than the timeouts in hand. Most of the time, teams let the clock run instead.</p>
+    </header>
+    <div class="tiles">
+      <div class="tile">
+        <div class="label">Called timeout when the math said to</div>
+        <div class="value">{{dr_all_pct}}</div>
+        <div class="compare">All FBS &amp; FCS ({{dr_all_n}} spots). Ivy teams {{dr_ivy_pct}}.</div>
+      </div>
+      <div class="tile">
+        <div class="label">Clock lost each time they didn't</div>
+        <div class="value">{{dr_lost}} sec</div>
+        <div class="compare">About the whole time between two plays. When teams do call it, they call it right away.</div>
+      </div>
+      <div class="tile">
+        <div class="label">Brown</div>
+        <div class="value">{{brown_called}} of {{brown_should}}</div>
+        <div class="compare">About {{brown_lost_game}} seconds a game given away in these spots.</div>
+      </div>
+    </div>
+    <div class="table-wrap"><table id="missed-table"></table></div>
+  </section>
+
+  <section aria-labelledby="audit-h">
+    <header>
+      <div class="eyebrow">Brown, 2023 to 2026</div>
+      <h2 id="audit-h">How Brown uses its timeouts</h2>
+      <p>Brown uses {{brown_total}} timeouts a game, a little more than other Ivy teams ({{ivy_total}}). The extra ones go to stopping the clock at the end of halves, which is a good use. Brown rarely has to burn a timeout because the play clock is running out: {{brown_play_clock}} a game, compared with {{ivy_play_clock}} for other Ivy teams and {{all_play_clock}} across college football.</p>
+    </header>
+    <figure class="card" id="audit-card">
+      <div class="legend" id="audit-legend"></div>
+      <div class="chart-scroll"><svg id="audit" role="img" aria-labelledby="audit-h"></svg></div>
+      <figcaption>Timeouts per game, sorted by what they were used for. The data doesn't say why a timeout was called, so we labeled each one from the game situation. For example, "play clock running out" means the offense let 20 or more seconds run before calling it.</figcaption>
+      <button type="button" class="link" id="audit-table-toggle" aria-expanded="false">Show as table</button>
+      <div class="table-wrap" id="audit-table" hidden></div>
+      <div class="tip" id="audit-tip" hidden></div>
+    </figure>
+    <div class="tiles">
+      <div class="tile">
+        <div class="label">Timeouts left over at halftime</div>
+        <div class="value">{{brown_half}}</div>
+        <div class="compare">Other Ivy teams {{ivy_half}}, all FBS &amp; FCS {{all_half}}. They don't carry over to the second half, so Brown wastes fewer than most.</div>
+      </div>
+      <div class="tile">
+        <div class="label">Timeouts left over at the end of the game</div>
+        <div class="value">{{brown_end}}</div>
+        <div class="compare">Other Ivy teams {{ivy_end}}, all FBS &amp; FCS {{all_end}}. Mostly in wins, where they aren't needed.</div>
+      </div>
+      <div class="tile">
+        <div class="label">Close losses that ended with a timeout unused</div>
+        <div class="value">{{close_unused}} of {{close_n}}</div>
+        <div class="compare">{{close_brown_share}} for Brown, about {{close_all_share}} for everyone else. Close loss = lost by 8 or less.</div>
+      </div>
+    </div>
+    <div class="table-wrap"><table id="pc-table"></table></div>
+    <div class="table-wrap"><table id="loss-table"></table></div>
+  </section>
+
+  <section aria-labelledby="trust-h">
+    <header>
+      <div class="eyebrow">Checking our work</div>
+      <h2 id="trust-h">Can we trust these numbers?</h2>
+      <p>We built our chance-of-winning estimate from the 2023 and 2024 seasons, then tested it on 2025 games it had never seen. Its predictions held up: when it gave teams about a 35% chance, those teams won about 33% of the time.</p>
+    </header>
+    <div class="two-col">
+      <figure class="card" id="cal-card">
+        <h3>Our predictions vs. what happened, 2025</h3>
+        <div class="chart-scroll"><svg id="cal" role="img" aria-label="Predicted chance of winning versus how often teams actually won, 2025"></svg></div>
+        <figcaption>Each dot is a group of 2025 plays where we predicted about the same chance of winning. A dot on the diagonal line means the prediction was right. The biggest miss is {{cal_worst}} percentage points.</figcaption>
+        <div class="tip" id="cal-tip" hidden></div>
+      </figure>
+      <div class="card">
+        <h3>Down 3, 2:00 left, our ball at our 25</h3>
+        <p class="small muted">1st &amp; 10, both teams with 3 timeouts. Same situation, four answers.</p>
+        <div class="tiles">
+          <div class="tile">
+            <div class="label">Our estimate, Brown vs. Yale</div>
+            <div class="value">{{yale_3}}</div>
+            <div class="compare">{{yale_0}} with no timeouts</div>
+          </div>
+          <div class="tile">
+            <div class="label">Our estimate, evenly matched teams</div>
+            <div class="value">{{even_3}}</div>
+            <div class="compare">{{even_0}} with no timeouts</div>
+          </div>
+          <div class="tile">
+            <div class="label">What actually happened, Ivy games 2019 to 2026</div>
+            <div class="value">{{ivy_won}} of {{ivy_n}}</div>
+            <div class="compare">teams in this spot won {{ivy_pct}} of the time</div>
+          </div>
+          <div class="tile">
+            <div class="label">PFF's own win-chance tool</div>
+            <div class="value">{{pff_3}}</div>
+            <div class="compare">far below what actually happens, so we don't rely on it</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="method-h" class="method">
+    <h2 id="method-h">How we did it</h2>
+    <ul>
+      <li>The data: play-by-play for every FBS and FCS game since {{first_season}} from PFF ({{games}} games). We start in 2023 because the NCAA changed its clock rules that year.</li>
+      <li>Finding the timeouts: PFF doesn't list timeouts directly, but it tracks how many each team has left. Every time that number drops, a timeout was called. That gave us {{timeouts}} timeouts, and they match PFF's own count almost exactly.</li>
+      <li>Time per play: PFF records the game clock and the play clock at every snap. When the clock keeps running, the time from one snap to the next splits into the play itself and the time between plays. PFF also marks when an offense is running out the clock (four-minute offense) or hurrying (two-minute offense).</li>
+      <li>Chance of winning: we estimate it from the score, how many points the current drive is likely to produce, how much time is left, and how good each team is. The less time left, the more the score decides it.</li>
+      <li>What a timeout is worth: its main job late in a game is stopping the clock. We measured how much clock one saves (about {{secs_def}} seconds when the other team is running out the clock, {{secs_ball}} seconds in our two-minute offense) and asked how much those seconds raise our chance of winning.</li>
+      <li>The card: for each situation it finds when time gets tight, then applies the rules from the math section (their snaps left against our timeouts, saving them for defense when we need two scores, and whether they can kneel it out). Time is tight when our drive would have less time than three out of four of the {{need_n}} successful hurry-up scoring drives needed for that distance: about {{need_fg}} to get from our 25 into field-goal range, {{need_td}} for a touchdown. When they have the ball we assume a stop gets us the ball where their punt usually lands (about {{punt_net}} yards downfield, no worse than our {{punt_floor}}), and that inside our {{fg_range}} a stop still gives up a field goal.</li>
+      <li>All numbers are changes in our chance of winning. Going from 30% to 32% is shown as +2%.</li>
+      <li>What this leaves out: timeouts have other uses, like fixing a bad play call or settling the team, and those aren't counted. So treat these numbers as the least a timeout is worth.</li>
+      <li>Why not just compare teams that had timeouts left with teams that didn't? We tried. Teams that use timeouts early are usually having a bad day (they win 43% of the time, against 53% for everyone else), so that approach made timeouts look far more valuable than they really are.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="hash" aria-hidden="true"></div>
+    <div>Companion page: <a href="https://claude.ai/artifact/RgXLswC1gSoVyZHHrYBT5n">Brown Fourth-Down Card</a>.</div>
+    <div>To update after new games: export the new PFF play data into <code>data/ncaa/raw/</code>, then run the scripts in <code>tos/</code> in order (<code>build_dataset</code>, <code>timeouts</code>, <code>wp_model</code>, <code>report_data</code>, <code>build_report</code>).</div>
+  </footer>
+</div>
+
+<script>
+const D = __REPORT_DATA__;
+
+const TEAMS = {
+  RIUN: "Rhode Island", NJPR: "Princeton", CTYA: "Yale", DCGT: "Georgetown",
+  RIBT: "Bryant", MAHA: "Harvard", PAUN: "Penn", NYCN: "Cornell",
+  NHDA: "Dartmouth", NYCL: "Columbia", CTNH: "New Haven", CTCE: "Central Connecticut"
+};
+const GROUPS = ["Brown", "Rest of Ivy", "All FBS/FCS"];
+const GROUP_VAR = { "Brown": "--s1", "Rest of Ivy": "--s2", "All FBS/FCS": "--s3" };
+const GROUP_LABEL = { "Brown": "Brown", "Rest of Ivy": "Other Ivy teams", "All FBS/FCS": "All FBS & FCS" };
+const PURPOSE = {
+  clock: "Stopping the clock, end of a half",
+  defense: "On defense, any other time",
+  play_clock: "Play clock running out",
+  fourth_down: "Before going for it on 4th down",
+  pre_punt: "Before a punt",
+  pre_kick: "Before a field goal or extra point",
+  offense: "Other, on offense"
+};
+const RAMP_LIGHT = ["#dbe9fb", "#b7d3f6", "#86b6ef", "#5598e7", "#2a78d6", "#1c5cab", "#104281", "#0d366b"];
+const RAMP_DARK = ["#172a44", "#133563", "#184f95", "#1c5cab", "#2a78d6", "#5598e7", "#86b6ef", "#b7d3f6"];
+const VMAX = 4;
+const NS = "http://www.w3.org/2000/svg";
+
+/* ---------- helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const dark = () => css("--scheme") === "dark";
+const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+const leadText = (l) => (l > 0 ? `Up ${l}` : l < 0 ? `Down ${-l}` : "Tied");
+const spot = (ytg) => (ytg > 50 ? `own ${100 - ytg}` : ytg < 50 ? `opp ${ytg}` : "midfield");
+const ord = (n) => ({ 1: "1st", 2: "2nd", 3: "3rd", 4: "4th" }[n] || `${n}th`);
+const team = (code) => TEAMS[code] || code;
+const pct = (v) => `${v.toFixed(v < 1 ? 2 : 1)}%`;   // a change in chance of winning, in points
+
+function svgEl(tag, attrs, parent) {
+  const node = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
+  if (parent) parent.appendChild(node);
+  return node;
+}
+function text(parent, x, y, str, cls, anchor) {
+  // cls "" means no class, so a fill set afterwards isn't overridden by CSS
+  const t = svgEl("text", { x, y, "text-anchor": anchor || "start" }, parent);
+  if (cls !== "") t.setAttribute("class", cls || "tick");
+  t.textContent = str;
+  return t;
+}
+function html(tag, cls, str, parent) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (str !== undefined) node.textContent = str;
+  if (parent) parent.appendChild(node);
+  return node;
+}
+function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function rampColor(v) {
+  if (v < 0.05) return css("--zero");
+  const ramp = dark() ? RAMP_DARK : RAMP_LIGHT;
+  const t = Math.min(v / VMAX, 1) * (ramp.length - 1);
+  const i = Math.min(Math.floor(t), ramp.length - 2), f = t - i;
+  const a = hexToRgb(ramp[i]), b = hexToRgb(ramp[i + 1]);
+  const c = a.map((x, j) => Math.round(x + (b[j] - x) * f));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+function inkOn(fill) {
+  const m = fill.match(/\d+/g);
+  if (!m) return css("--ink");
+  const [r, g, b] = m.map(Number);
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#211915" : "#ffffff";
+}
+
+/* tooltip: rows of [text, class] built with textContent */
+function showTip(tipId, card, evt, rows) {
+  const tip = $(tipId);
+  clear(tip);
+  for (const [str, cls] of rows) html("div", cls || "", str, tip);
+  tip.hidden = false;
+  const box = card.getBoundingClientRect();
+  let x = evt.clientX - box.left + 14, y = evt.clientY - box.top + 14;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  if (x + w > box.width - 6) x = evt.clientX - box.left - w - 14;
+  if (y + h > box.height - 6) y = evt.clientY - box.top - h - 14;
+  tip.style.left = `${Math.max(6, x)}px`;
+  tip.style.top = `${Math.max(6, y)}px`;
+}
+function hideTip(tipId) { $(tipId).hidden = true; }
+
+/* ---------- colors shared by the new charts ---------- */
+function rampAt(frac) {
+  const ramp = dark() ? RAMP_DARK : RAMP_LIGHT;
+  const t = Math.max(0, Math.min(frac, 1)) * (ramp.length - 1);
+  const i = Math.min(Math.floor(t), ramp.length - 2), f = t - i;
+  const a = hexToRgb(ramp[i]), b = hexToRgb(ramp[i + 1]);
+  const c = a.map((x, j) => Math.round(x + (b[j] - x) * f));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+function textOn(fill) {
+  if (fill.startsWith("#")) {
+    const [r, g, b] = hexToRgb(fill);
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#211915" : "#ffffff";
+  }
+  return inkOn(fill);
+}
+function hatchDefs(svg) {
+  const defs = svgEl("defs", {}, svg);
+  const pat = svgEl("pattern", { id: `${svg.id}-hatch`, width: 6, height: 6,
+    patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
+  svgEl("rect", { width: 6, height: 6, fill: css("--surface") }, pat);
+  svgEl("line", { x1: 0, y1: 0, x2: 0, y2: 6, stroke: css("--axis"), "stroke-width": 1.5 }, pat);
+  return `url(#${svg.id}-hatch)`;
+}
+
+/* ---------- the timeout engine ----------
+   Chance of winning comes from the same formula the analysis fitted:
+   lead + expected points, give or take a spread that shrinks as the clock
+   runs down. A timeout's value is the chance of winning its saved seconds add.
+   When to call comes from the math section: only once time is tight (if they
+   run the clock on every snap left, we'd get the ball back with less than a
+   hurry-up scoring drive usually needs), then snaps left vs timeouts decides
+   call-now or wait. Two scores down with the ball: save them for defense. */
+const R = D.recommend;
+const P = D.wp_params;
+const SAVE = D.seconds_saved;
+const KILL_CYCLE = D.play_time.rows.all.find((r) => r.mode === "four_minute" && r.call === "R").total;
+const KNEEL = (() => {
+  const k = D.play_time.rows.all.find((r) => r.mode === "kneel");
+  return { live: k.live, dead: k.dead };
+})();
+// Time a hurry-up drive needs from `ytg` yards out to get the score it must
+// (same rule as time_needed() in clock_game.py): field-goal range when down
+// 1-3 or tied, a touchdown when down 4-8, a touchdown plus a short second
+// drive when down 9 or more.
+function driveNeeds(y) {
+  const DT = D.drive_time, at20 = DT.a + 20 * DT.b;
+  return y >= 20 ? DT.a + DT.b * y : 30 + (at20 - 30) * y / 20;
+}
+function needFor(lead, ytg) {
+  if (lead <= -9) return driveNeeds(ytg) + driveNeeds(20);
+  if (lead <= -4) return driveNeeds(ytg);
+  return driveNeeds(Math.max(0, ytg - 30));
+}
+// Where we get the ball back after a stop (same rule as ball_back() in
+// clock_game.py): inside field-goal range a stop still gives up 3 and we start
+// at our 25; otherwise we start where their punt usually lands.
+const PUNT = D.punt;
+function ballBack(theirYtg, lead) {
+  if (theirYtg <= PUNT.fg_range) return { lead: lead - 3, ytg: 75, kicked: true };
+  return { lead, ytg: 100 - Math.max(PUNT.floor, theirYtg - PUNT.net), kicked: false };
+}
+
+function erf(x) {
+  const sign = Math.sign(x);
+  const a = Math.abs(x);
+  const t = 1 / (1 + 0.3275911 * a);
+  const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t
+    + 0.254829592) * t * Math.exp(-a * a);
+  return sign * y;
+}
+const Phi = (z) => 0.5 * (1 + erf(z / Math.SQRT2));
+function wpOffense(lead, ep, secs, strength) {
+  const t = Math.max(secs, 1) / 3600;
+  return Phi((lead + P.a * ep + P.b * strength * t) / (P.sigma * Math.sqrt(t) + P.c));
+}
+function ourWP(side, lead, ep, secs, strength) {
+  return side === "us" ? wpOffense(lead, ep, secs, strength)
+    : 1 - wpOffense(-lead, ep, secs, -strength);
+}
+
+const yardText = (y) => (y < 50 ? `our ${y}` : y > 50 ? `their ${100 - y}` : "midfield");
+const downText = (row) => `${ord(R.downs[row].down)} & ${R.downs[row].distance}`;
+function situationText(side, row, yard) {
+  const d = R.downs[row];
+  const ytg = side === "us" ? 100 - yard : yard;
+  const dist = d.distance >= ytg ? "goal" : d.distance;
+  return `${side === "us" ? "We have" : "They have"} ${ord(d.down)} & ${dist} at ${yardText(yard)}`;
+}
+
+function decide(side, lead, k, strength, row, yard, ti) {
+  const d = R.downs[row];
+  const ytg = side === "us" ? 100 - yard : yard;
+  const yi = R.ytgs.indexOf(ytg);
+  const t = R.grid_clock[ti];
+  const ep = R.ep[row][yi][ti];
+  const save = side === "them" ? SAVE.def : SAVE.ball;
+  const wp = ourWP(side, lead, ep, t, strength);
+  const out = {
+    t, lead, save, snapsLeft: 5 - d.down, wp: wp * 100,
+    value: Math.max(0, ourWP(side, lead, ep, t + save, strength) - wp) * 100
+  };
+  if (side === "us") {
+    out.penalty = (wp - ourWP("us", lead, R.ep_pen[row][yi][ti], t, strength)) * 100;
+    const spike = R.ep_spike[row];
+    out.spike = spike ? (wp - ourWP("us", lead, spike[yi][ti], t, strength)) * 100 : null;
+  }
+  if (side === "them" && lead < 0) {
+    const kneels = out.snapsLeft;
+    const burn = kneels * KNEEL.live + Math.max(0, kneels - k) * KNEEL.dead;
+    if (burn >= t) { out.cat = "kneel"; return out; }
+  }
+  if (side === "them") {
+    const back = ballBack(ytg, lead);
+    out.need = needFor(back.lead, back.ytg);
+    out.kicked = back.kicked;
+  } else {
+    out.need = needFor(lead, ytg);
+  }
+  if (out.wp >= 99.5 || out.wp <= 0.5) out.cat = "over";
+  else if (lead > 0) out.cat = "ahead";
+  else if (side === "them") {
+    out.ballBack = Math.max(0, t - out.snapsLeft * KILL_CYCLE);
+    if (out.ballBack >= out.need) out.cat = "save";
+    else out.cat = k >= out.snapsLeft ? "call" : "wait";
+  } else if (lead === 0) out.cat = "save";
+  else if (t >= out.need) out.cat = "save";
+  else if (lead <= -9 && t >= 90) out.cat = "defense";
+  else out.cat = "call";
+  return out;
+}
+
+const CATS = {
+  call: { label: "Call timeout now", fill: () => css("--s1") },
+  wait: { label: "Wait a down, then call", fill: () => css("--s3") },
+  defense: { label: "Save it for defense", fill: () => css("--s2") },
+  save: { label: "Save it: time isn't tight yet", fill: () => css("--zero") },
+  ahead: { label: "We're ahead: let the clock run", fill: () => css("--surface"), outline: true },
+  over: { label: "Nothing to gain: game decided", hatch: true },
+  kneel: { label: "Nothing to gain: they can kneel it out", hatch: true }
+};
+
+function reason(r, side, k) {
+  const s = (n) => (n === 1 ? "" : "s");
+  switch (r.cat) {
+    case "call":
+      return side === "them"
+        ? `Time is tight, and they have ${r.snapsLeft} snap${s(r.snapsLeft)} left before a punt while we have ${k} timeout${s(k)}: use one every time the clock is running.`
+        : `Time is tight: stop the clock after plays that stay in bounds. Each timeout saves about ${Math.round(r.save)} seconds of our drive.`;
+    case "wait":
+      return `Time is tight, but they have ${r.snapsLeft} snaps left before a punt and we have only ${k}. Wait a down: if they get a first down, we still have it.`;
+    case "defense":
+      return `We need two scores. Save timeouts for defense, where each saves about ${Math.round(SAVE.def)} seconds instead of ${Math.round(SAVE.ball)}.`;
+    case "save":
+      if (side === "them") {
+        return `Time isn't tight yet: even if they run the clock, we get the ball back with about ${clock(Math.round(r.ballBack / 5) * 5)}, and our drive should need about ${clock(Math.round(r.need / 10) * 10)}${r.kicked ? " (assuming they still kick a field goal from here)" : ""}.`;
+      }
+      return r.lead === 0
+        ? "Tied with the ball, we control the clock. Stop it only if we need time to reach field-goal range."
+        : `There is still enough time for this drive (from here it should need about ${clock(Math.round(r.need / 10) * 10)}). Save them for when it gets tight.`;
+    case "ahead":
+      return "More time only helps them.";
+    case "over":
+      return "The game is decided either way.";
+    default:
+      return "They can kneel out the clock even if we use every timeout.";
+  }
+}
+
+/* ---------- the recommendation card and score-by-time view ---------- */
+const recState = { side: "them", lead: -3, k: 3, strength: 0, view: "card", row: 2, yard: 65, numbers: false };
+
+function cardCell(row, yard) {
+  const { side, lead, k, strength } = recState;
+  let start = null, wait = false;
+  for (let ti = R.grid_clock.length - 1; ti >= 0; ti--) {
+    const r = decide(side, lead, k, strength, row, yard, ti);
+    if (r.cat === "call") { start = r.t; break; }
+    if (r.cat === "wait") wait = true;
+  }
+  if (start !== null) return { kind: "call", start };
+  if (wait) return { kind: "wait" };
+  const two = decide(side, lead, k, strength, row, yard, R.grid_clock.indexOf(120));
+  return { kind: "none", cat: two.cat };
+}
+
+function renderCard() {
+  const svg = $("rec");
+  clear(svg);
+  const { side, lead, k } = recState;
+  const W = 780, ml = 80, mr = 8, mt = 46, ch = 26;
+  const cw = (W - ml - mr) / R.yards.length;
+  const H = mt + R.downs.length * ch + 30;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const START_MAX = 600;
+
+  const half = ml + 9 * cw;
+  text(svg, ml + (half - ml) / 2, 14, "OUR SIDE OF THE FIELD", "axis-title", "middle");
+  text(svg, half + cw + (W - mr - half - cw) / 2, 14, "THEIR SIDE OF THE FIELD", "axis-title", "middle");
+  R.yards.forEach((y, j) => {
+    const label = y === 50 ? "50" : String(y < 50 ? y : 100 - y);
+    text(svg, ml + j * cw + cw / 2, mt - 10, label, "tick", "middle");
+  });
+  text(svg, ml - 8, mt - 10, "Ball on", "tick", "end");
+
+  R.downs.forEach((d, i) => {
+    const y = mt + i * ch;
+    text(svg, ml - 8, y + ch / 2 + 4, downText(i), "rowlabel", "end");
+    R.yards.forEach((yard, j) => {
+      const x = ml + j * cw;
+      const cell = cardCell(i, yard);
+      let fill, label;
+      if (cell.kind === "call") {
+        fill = rampAt(0.12 + 0.88 * Math.min(cell.start, START_MAX) / START_MAX);
+        label = clock(cell.start);
+      } else if (cell.kind === "wait") {
+        fill = css("--s3"); label = "WAIT";
+      } else {
+        fill = css("--zero"); label = "—";
+      }
+      const rect = svgEl("rect", { x: x + 1, y: y + 1, width: cw - 2, height: ch - 2, rx: 2, fill }, svg);
+      const t = text(svg, x + cw / 2, y + ch / 2 + 3.5, label, "", "middle");
+      t.setAttribute("fill", cell.kind === "none" ? css("--muted") : textOn(fill));
+      t.setAttribute("font-size", "10");
+      t.setAttribute("font-family", "IBM Plex Mono, ui-monospace, monospace");
+      const hit = svgEl("rect", { x, y, width: cw, height: ch, fill: "transparent", style: "cursor:pointer" }, svg);
+      hit.addEventListener("pointermove", (evt) => {
+        const rows = [[`${leadText(lead)} · ${situationText(side, i, yard)} · ${k} timeout${k > 1 ? "s" : ""}`, "sub"]];
+        if (cell.kind === "call") {
+          const r = decide(side, lead, k, recState.strength, i, yard, R.grid_clock.indexOf(cell.start));
+          rows.push([`Call timeout with ${clock(cell.start)} or less left`, "big"]);
+          rows.push([`At ${clock(cell.start)}, one timeout adds +${pct(r.value)} (our chance: ${Math.round(r.wp)}%)`, ""]);
+          rows.push([reason(r, side, k), "sub"]);
+        } else if (cell.kind === "wait") {
+          const r = decide(side, lead, k, recState.strength, i, yard, R.grid_clock.indexOf(120));
+          rows.push(["Wait a down", "big"]);
+          rows.push([reason({ ...r, cat: "wait" }, side, k), ""]);
+        } else {
+          const r = decide(side, lead, k, recState.strength, i, yard, R.grid_clock.indexOf(120));
+          rows.push(["Don't call timeout", "big"]);
+          rows.push([reason(r, side, k), ""]);
+        }
+        rows.push(["Click to see this situation by score and time", "sub"]);
+        showTip("rec-tip", $("rec-card"), evt, rows);
+        rect.setAttribute("opacity", "0.82");
+      });
+      hit.addEventListener("pointerleave", () => { hideTip("rec-tip"); rect.removeAttribute("opacity"); });
+      hit.addEventListener("click", () => {
+        recState.row = i; recState.yard = yard; recState.view = "grid";
+        $("rec-row").value = String(i); $("rec-yard").value = String(yard);
+        setPressed("#rec-card [data-view]", "view", "grid");
+        hideTip("rec-tip");
+        renderRec();
+      });
+    });
+  });
+
+  const lg = $("rec-legend");
+  clear(lg);
+  const rampItem = html("span", "item", undefined, lg);
+  const wrap = html("span", "ramp-wrap", undefined, rampItem);
+  const bar = html("span", "ramp", undefined, wrap);
+  bar.style.background = `linear-gradient(90deg, ${[0.12, 0.4, 0.7, 1].map(rampAt).join(",")})`;
+  const ticks = html("span", "ramp-ticks", undefined, wrap);
+  ["0:30", "5:00", "10:00+"].forEach((s) => html("span", "", s, ticks));
+  html("span", "", "Start calling timeouts with this much time left", rampItem);
+  const w = html("span", "item", undefined, lg);
+  html("span", "sq-swatch", undefined, w).style.background = css("--s3");
+  html("span", "", "WAIT: use it on a later down", w);
+  const n = html("span", "item", undefined, lg);
+  html("span", "zero-swatch", undefined, n);
+  html("span", "", "— Don't call timeout (hover to see why)", n);
+
+  $("rec-caption").textContent = `${side === "them" ? "They have the ball" : "We have the ball"}, ${leadText(lead).toLowerCase()}, ${k} timeout${k > 1 ? "s" : ""} left. Times are the 4th-quarter clock. Assumes the clock is running after the last play; if it already stopped (incomplete pass, out of bounds, change of possession), don't call timeout. Click any square to see that situation across every score and time.`;
+}
+
+function renderScoreTime() {
+  const svg = $("rec");
+  clear(svg);
+  const hatch = hatchDefs(svg);
+  const { side, k, strength, row, yard, numbers } = recState;
+  const tis = R.grid_clock.map((t, i) => [t, i]).filter(([t]) => t <= 480).reverse();
+  const leads = [...R.grid_lead].reverse();
+  const W = 780, ml = 70, mr = 10, mt = 8, ch = 19;
+  const cw = (W - ml - mr) / tis.length;
+  const H = mt + leads.length * ch + 46;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+  leads.forEach((lead, r) => {
+    const y = mt + r * ch;
+    text(svg, ml - 8, y + ch / 2 + 4, leadText(lead), "rowlabel", "end");
+    tis.forEach(([t, ti], j) => {
+      const x = ml + j * cw;
+      const res = decide(side, lead, k, strength, row, yard, ti);
+      const cat = CATS[res.cat];
+      const fill = cat.hatch ? hatch : cat.fill();
+      const rect = svgEl("rect", { x: x + 1, y: y + 1, width: cw - 2, height: ch - 2, rx: 2, fill }, svg);
+      if (cat.outline) { rect.setAttribute("stroke", css("--axis")); rect.setAttribute("stroke-width", "1"); }
+      if (numbers && res.value >= 0.05) {
+        const tx = text(svg, x + cw / 2, y + ch / 2 + 3.5, res.value.toFixed(1), "", "middle");
+        tx.setAttribute("fill", cat.hatch || cat.outline || res.cat === "save" ? css("--ink-2") : textOn(fill));
+        tx.setAttribute("font-size", "9.5");
+        tx.setAttribute("font-family", "IBM Plex Mono, ui-monospace, monospace");
+      }
+      const hit = svgEl("rect", { x, y, width: cw, height: ch, fill: "transparent" }, svg);
+      hit.addEventListener("pointermove", (evt) => {
+        const rows = [
+          [`${leadText(lead)}, ${clock(t)} left · ${situationText(side, row, yard)}`, "sub"],
+          [cat.label, "big"],
+          [`One timeout now: +${pct(res.value)} (saves about ${Math.round(res.save)} seconds)`, ""],
+          [`Our chance of winning: ${Math.min(99, Math.max(1, Math.round(res.wp)))}%`, ""],
+          [reason(res, side, k), "sub"]
+        ];
+        if (side === "us") {
+          rows.push([`Play clock about to expire? A delay of game here costs ${pct(res.penalty)}: ${res.penalty > res.value ? "call timeout" : "take the 5 yards and keep the timeout"}.`, ""]);
+          if (res.cat === "call" && res.spike !== null) {
+            rows.push([`Spike instead? It costs a down (${pct(res.spike)}), so ${res.spike < res.value ? "spiking is better" : "the timeout is better"}.`, "sub"]);
+          }
+        }
+        showTip("rec-tip", $("rec-card"), evt, rows);
+        rect.setAttribute("opacity", "0.82");
+      });
+      hit.addEventListener("pointerleave", () => { hideTip("rec-tip"); rect.removeAttribute("opacity"); });
+    });
+  });
+  const axisY = mt + leads.length * ch + 16;
+  tis.forEach(([t], j) => {
+    if (t % 60 === 0 || t === 30) text(svg, ml + j * cw + cw / 2, axisY, clock(t), "tick", "middle");
+  });
+  text(svg, ml + (W - ml - mr) / 2, axisY + 22, "TIME LEFT IN THE 4TH QUARTER", "axis-title", "middle");
+
+  const lg = $("rec-legend");
+  clear(lg);
+  const used = side === "them" ? ["call", "wait", "save", "ahead", "kneel"] : ["call", "defense", "save", "ahead", "over"];
+  used.forEach((key) => {
+    const cat = CATS[key];
+    const item = html("span", "item", undefined, lg);
+    if (cat.hatch) html("span", "hatch-swatch", undefined, item);
+    else if (cat.outline) html("span", "outline-swatch", undefined, item);
+    else if (key === "save") html("span", "zero-swatch", undefined, item);
+    else html("span", "sq-swatch", undefined, item).style.background = cat.fill();
+    html("span", "", cat.label, item);
+  });
+
+  $("rec-caption").textContent = `${situationText(side, row, yard)}, ${k} timeout${k > 1 ? "s" : ""} left. Assumes the clock is running after the last play. Turn on "Show numbers" to see how much one timeout adds to our chance of winning in each square.`;
+}
+
+function setPressed(selector, key, value) {
+  document.querySelectorAll(selector).forEach((b) =>
+    b.setAttribute("aria-pressed", String(b.dataset[key] === String(value))));
+}
+
+function renderRec() {
+  const grid = recState.view === "grid";
+  $("rec-situation").hidden = !grid;
+  $("rec-numbers-wrap").hidden = !grid;
+  $("rec-lead").disabled = grid;
+  if (grid) renderScoreTime(); else renderCard();
+}
+
+function bindRec() {
+  const lead = $("rec-lead");
+  [...R.grid_lead].reverse().forEach((l) => {
+    const o = html("option", "", leadText(l), lead);
+    o.value = String(l);
+  });
+  lead.value = String(recState.lead);
+  lead.addEventListener("change", () => { recState.lead = Number(lead.value); renderRec(); });
+
+  const rowSel = $("rec-row");
+  R.downs.forEach((d, i) => { html("option", "", downText(i), rowSel).value = String(i); });
+  rowSel.value = String(recState.row);
+  rowSel.addEventListener("change", () => { recState.row = Number(rowSel.value); renderRec(); });
+
+  const yardSel = $("rec-yard");
+  R.yards.forEach((y) => { html("option", "", `Ball on ${yardText(y)}`, yardSel).value = String(y); });
+  yardSel.value = String(recState.yard);
+  yardSel.addEventListener("change", () => { recState.yard = Number(yardSel.value); renderRec(); });
+
+  $("rec-strength").addEventListener("change", (e) => { recState.strength = Number(e.target.value); renderRec(); });
+  $("rec-numbers").addEventListener("change", (e) => { recState.numbers = e.target.checked; renderRec(); });
+
+  [["side", "side", (v) => v], ["k", "k", Number], ["view", "view", (v) => v]].forEach(([attr, key, cast]) => {
+    document.querySelectorAll(`#rec-card [data-${attr}]`).forEach((b) => b.addEventListener("click", () => {
+      recState[key] = cast(b.dataset[attr]);
+      setPressed(`#rec-card [data-${attr}]`, attr, b.dataset[attr]);
+      renderRec();
+    }));
+  });
+}
+
+/* ---------- the three-stop timeline ---------- */
+function renderTimeline() {
+  const svg = $("timeline");
+  clear(svg);
+  const four = D.play_time.rows.all.find((r) => r.mode === "four_minute" && r.call === "R");
+  const live = four.live, dead = SAVE.def, start = 150;
+  const W = 760, ml = 170, mr = 16, mt = 24, rowH = 50, bh = 22;
+  const H = mt + 2 * rowH + 34;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const x = (left) => ml + (1 - left / start) * (W - ml - mr);
+
+  [150, 120, 90, 60, 30, 0].forEach((s) => {
+    svgEl("line", { x1: x(s), x2: x(s), y1: mt - 6, y2: mt + 2 * rowH - 8, stroke: css("--grid"), "stroke-width": 1 }, svg);
+    text(svg, x(s), mt + 2 * rowH + 10, clock(s), "tick", "middle");
+  });
+  text(svg, x(start / 2), mt + 2 * rowH + 28, "GAME CLOCK", "axis-title", "middle");
+
+  const rows = [
+    { label: "No timeouts", segs: ["dead", "play", "dead", "play", "dead"] },
+    { label: "3 timeouts, called right away", segs: ["play", "play"] }
+  ];
+  const ends = [];
+  rows.forEach((r, i) => {
+    const y = mt + i * rowH;
+    text(svg, ml - 10, y + bh / 2 + 4, r.label, "rowlabel", "end");
+    let left = start;
+    r.segs.forEach((seg) => {
+      const dur = seg === "play" ? live : dead;
+      const x0 = x(left) + 1, x1 = x(Math.max(0, left - dur)) - 1;
+      svgEl("rect", { x: x0, y, width: Math.max(1, x1 - x0), height: bh, rx: 3,
+        fill: css(seg === "play" ? "--s1" : "--s2") }, svg);
+      if (x1 - x0 > 30) {
+        const t = text(svg, (x0 + x1) / 2, y + bh / 2 + 4, `${Math.round(dur)}s`, "", "middle");
+        t.setAttribute("fill", textOn(css(seg === "play" ? "--s1" : "--s2")));
+        t.setAttribute("font-size", "11");
+      }
+      left -= dur;
+    });
+    left = Math.max(0, left);
+    ends.push(left);
+    if (left > 0) {
+      svgEl("rect", { x: x(left) + 1, y: y + 0.75, width: Math.max(1, x(0) - x(left) - 2), height: bh - 1.5, rx: 3,
+        fill: "none", stroke: css("--axis"), "stroke-width": 1.5 }, svg);
+    }
+    svgEl("line", { x1: x(left), x2: x(left), y1: y - 6, y2: y + bh + 6, stroke: css("--accent"), "stroke-width": 2 }, svg);
+    const lab = text(svg, x(left) + (left > 60 ? 8 : -8), y - 8, `Punt, ${clock(Math.round(left))} left`, "value", left > 60 ? "start" : "end");
+    lab.setAttribute("font-size", "11.5");
+  });
+
+  const lg = $("tl-legend");
+  clear(lg);
+  [["--s1", "The play"], ["--s2", "Between plays: what a timeout stops"]].forEach(([v, label]) => {
+    const item = html("span", "item", undefined, lg);
+    html("span", "sq-swatch", undefined, item).style.background = css(v);
+    html("span", "", label, item);
+  });
+  const item = html("span", "item", undefined, lg);
+  html("span", "outline-swatch", undefined, item);
+  html("span", "", "Left for our drive", item);
+
+  const gained = Math.round(ends[1]) - Math.round(ends[0]);
+  $("tl-caption").textContent = `Without timeouts they punt with ${clock(Math.round(ends[0]))} left. With three timeouts, each called right after the whistle, they punt with ${clock(Math.round(ends[1]))} left: ${clock(gained)} more for our drive.`;
+}
+
+/* ---------- play time ---------- */
+const ptState = { group: "all" };
+
+function renderPlayTime() {
+  const svg = $("pt");
+  clear(svg);
+  const rows = D.play_time.rows[ptState.group];
+  const W = 760, ml = 230, mr = 60, mt = 8, rh = 34, bh = 18, xmax = 45;
+  const H = mt + rows.length * rh + 40;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const x = (v) => ml + (v / xmax) * (W - ml - mr);
+  const bottom = mt + rows.length * rh;
+
+  [0, 10, 20, 30, 40].forEach((g) => {
+    svgEl("line", { x1: x(g), x2: x(g), y1: mt, y2: bottom, stroke: css("--grid"), "stroke-width": 1 }, svg);
+    text(svg, x(g), bottom + 16, String(g), "tick", "middle");
+  });
+  text(svg, x(xmax / 2), bottom + 32, "SECONDS PER SNAP", "axis-title", "middle");
+
+  rows.forEach((r, i) => {
+    const y = mt + i * rh + (rh - bh) / 2;
+    const few = r.n < 30;
+    text(svg, ml - 10, y + bh / 2 + 4, few ? `${r.label} (few snaps)` : r.label, "rowlabel", "end");
+    if (!r.n) return;
+    const g = svgEl("g", { opacity: few ? 0.5 : 1 }, svg);
+    const x0 = x(0), x1 = x(r.live), x2 = x(r.total), rad = 4;
+    svgEl("rect", { x: x0, y, width: Math.max(1, x1 - x0 - 1), height: bh, fill: css("--s1") }, g);
+    const d = `M${x1 + 1},${y} H${x2 - rad} Q${x2},${y} ${x2},${y + rad} V${y + bh - rad} Q${x2},${y + bh} ${x2 - rad},${y + bh} H${x1 + 1} Z`;
+    svgEl("path", { d, fill: css("--s2") }, g);
+    text(svg, x2 + 6, y + bh / 2 + 4, `${Math.round(r.live) + Math.round(r.dead)}s`, "value");
+    const hit = svgEl("rect", { x: 0, y: mt + i * rh, width: W, height: rh, fill: "transparent" }, svg);
+    hit.addEventListener("pointermove", (evt) => {
+      showTip("pt-tip", $("pt-card"), evt, [
+        [r.label, "sub"],
+        [`${r.total.toFixed(1)} seconds per snap`, "big"],
+        [`${r.live.toFixed(1)} for the play + ${r.dead.toFixed(1)} between plays`, ""],
+        [`Play clock left at the snap: ${Math.round(r.clock_left)} seconds (typical)`, ""],
+        [`${r.n.toLocaleString()} snaps`, "sub"]
+      ]);
+    });
+    hit.addEventListener("pointerleave", () => hideTip("pt-tip"));
+  });
+
+  const lg = $("pt-legend");
+  clear(lg);
+  [["--s1", "The play (snap to whistle)"], ["--s2", "Between plays (whistle to next snap)"]].forEach(([v, label]) => {
+    const item = html("span", "item", undefined, lg);
+    html("span", "sq-swatch", undefined, item).style.background = css(v);
+    html("span", "", label, item);
+  });
+}
+
+function renderPlayClock() {
+  const svg = $("pclock");
+  clear(svg);
+  const H_ = D.play_time.clock_left_hist;
+  const series = [
+    { key: "normal", label: "Normal plays", color: css("--muted"), wash: false },
+    { key: "four_minute", label: "Running out the clock", color: css("--s1"), wash: true }
+  ];
+  const W = 760, H = 280, ml = 48, mr = 16, mt = 14, mb = 44;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const ymax = Math.ceil(Math.max(...H_.normal, ...H_.four_minute) * 100 / 5) * 5 / 100;
+  const x = (s) => ml + (s / 40) * (W - ml - mr);
+  const y = (v) => mt + (1 - v / ymax) * (H - mt - mb);
+
+  for (let g = 0; g <= ymax + 1e-9; g += 0.05) {
+    svgEl("line", { x1: x(0), x2: x(40), y1: y(g), y2: y(g), stroke: css("--grid"), "stroke-width": 1 }, svg);
+    text(svg, ml - 8, y(g) + 4, `${Math.round(g * 100)}%`, "tick", "end");
+  }
+  for (let s = 0; s <= 40; s += 5) text(svg, x(s), H - mb + 16, String(s), "tick", "middle");
+  text(svg, x(20), H - 8, "SECONDS LEFT ON THE PLAY CLOCK AT THE SNAP", "axis-title", "middle");
+
+  series.forEach((s) => {
+    const pts = H_[s.key].map((v, i) => `${x(i)},${y(v)}`);
+    if (s.wash) {
+      const area = svgEl("path", { d: `M${x(0)},${y(0)} L${pts.join(" L")} L${x(40)},${y(0)} Z`, fill: s.color }, svg);
+      area.setAttribute("opacity", "0.1");
+    }
+    svgEl("path", { d: `M${pts.join(" L")}`, fill: "none", stroke: s.color, "stroke-width": 2,
+      "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+  });
+
+  const med = D.play_time.four_minute_clock_left;
+  svgEl("line", { x1: x(med), x2: x(med), y1: mt, y2: y(0), stroke: css("--s1"), "stroke-width": 1 }, svg);
+  text(svg, x(med) + 6, mt + 10, `Typical snap when running out the clock: ${med} seconds left`, "value");
+
+  const cross = svgEl("line", { x1: 0, x2: 0, y1: mt, y2: y(0), stroke: css("--axis"), "stroke-width": 1, visibility: "hidden" }, svg);
+  const hit = svgEl("rect", { x: x(0), y: mt, width: x(40) - x(0), height: y(0) - mt, fill: "transparent" }, svg);
+  hit.addEventListener("pointermove", (evt) => {
+    const box = svg.getBoundingClientRect();
+    const px = (evt.clientX - box.left) * (W / box.width);
+    const s = Math.max(0, Math.min(40, Math.round(((px - ml) / (W - ml - mr)) * 40)));
+    cross.setAttribute("x1", x(s)); cross.setAttribute("x2", x(s)); cross.setAttribute("visibility", "visible");
+    showTip("pc-tip", $("pc-card"), evt, [
+      [`${s} seconds left on the play clock`, "sub"],
+      [`${(H_.four_minute[s] * 100).toFixed(1)}%  running out the clock`, "big"],
+      [`${(H_.normal[s] * 100).toFixed(1)}%  normal plays`, ""]
+    ]);
+  });
+  hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); hideTip("pc-tip"); });
+
+  const lg = $("pc-legend");
+  clear(lg);
+  series.forEach((s) => {
+    const item = html("span", "item", undefined, lg);
+    const key = html("span", "", undefined, item);
+    key.style.cssText = `display:inline-block;width:16px;height:2px;background:${s.color}`;
+    html("span", "", s.label, item);
+  });
+}
+
+function bindPlayTime() {
+  document.querySelectorAll("#pt-card [data-group]").forEach((b) => b.addEventListener("click", () => {
+    ptState.group = b.dataset.group;
+    setPressed("#pt-card [data-group]", "group", ptState.group);
+    renderPlayTime();
+  }));
+}
+
+/* ---------- theory vs reality: Brown's missed spots ---------- */
+function renderMissed() {
+  const table = $("missed-table");
+  clear(table);
+  const rows = D.defense_reality.brown_missed;
+  html("caption", "", "Late spots where Brown let the clock run", table);
+  const head = html("tr", "", undefined, html("thead", "", undefined, table));
+  ["Game", "Time left", "Score", "Their next snap", "Our timeouts", "Clock lost"].forEach((h, i) =>
+    html("th", i >= 4 ? "n" : "", h, head));
+  const body = html("tbody", "", undefined, table);
+  for (const r of rows) {
+    const tr = html("tr", "", undefined, body);
+    html("td", "", `${r.season} vs ${team(r.opponent)}`, tr);
+    html("td", "", clock(r.clock), tr);
+    html("td", "", leadText(r.lead), tr);
+    html("td", "", `${ord(r.next_down)} down`, tr);
+    html("td", "n", String(r.timeouts), tr);
+    html("td", "n", `${r.lost} sec`, tr);
+  }
+  const all3 = rows.filter((r) => r.timeouts === 3).length;
+  const avg = rows.length ? Math.round(rows.reduce((s, r) => s + r.lost, 0) / rows.length) : 0;
+  const note = html("tr", "", undefined, body);
+  const td = html("td", "small muted", `In ${all3} of these ${rows.length} spots Brown still had all three timeouts, and each time about ${avg} seconds ran off before the next snap. Each one is worth a look on film.`, note);
+  td.colSpan = 6;
+}
+
+/* ---------- penalty vs timeout ---------- */
+function renderPenalty() {
+  const svg = $("pen");
+  clear(svg);
+  const rows = D.penalty_costs;
+  const tv = D.option_value.one_score;
+  const W = 760, ml = 150, mr = 56, mt = 30, rh = 34, bh = 16, xmax = 5;
+  const H = mt + rows.length * rh + 34;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const x = (v) => ml + (v / xmax) * (W - ml - mr);
+  const plotBottom = mt + rows.length * rh;
+
+  for (let g = 0; g <= xmax; g++) {
+    svgEl("line", { x1: x(g), x2: x(g), y1: mt - 6, y2: plotBottom, stroke: css("--grid"), "stroke-width": 1 }, svg);
+    text(svg, x(g), plotBottom + 16, String(g), "tick", "middle");
+  }
+  text(svg, x(xmax / 2), plotBottom + 32, "HOW MUCH A 5-YARD PENALTY LOWERS OUR CHANCE OF WINNING (%)", "axis-title", "middle");
+
+  rows.forEach((r, i) => {
+    const y = mt + i * rh + (rh - bh) / 2;
+    text(svg, ml - 10, y + bh / 2 + 4, r.spot, "rowlabel", "end");
+    const x0 = x(0), x1 = Math.max(x(r.cost), x0 + 4), rad = 4;
+    const d = `M${x0},${y} H${x1 - rad} Q${x1},${y} ${x1},${y + rad} V${y + bh - rad} Q${x1},${y + bh} ${x1 - rad},${y + bh} H${x0} Z`;
+    const bar = svgEl("path", { d, fill: css("--s1") }, svg);
+    text(svg, x1 + 6, y + bh / 2 + 4, pct(r.cost), "value");
+    const hit = svgEl("rect", { x: 0, y: mt + i * rh, width: W, height: rh, fill: "transparent" }, svg);
+    hit.addEventListener("pointermove", (evt) => {
+      showTip("pen-tip", $("pen-card"), evt, [
+        [r.spot, "sub"],
+        [`-${pct(r.cost)}`, "big"],
+        [`The penalty drops the points this drive is likely to score from ${r.ep_before.toFixed(1)} to ${r.ep_after.toFixed(1)}`, ""],
+        [`About ${(r.cost / tv).toFixed(0)} times what a timeout is worth`, "sub"]
+      ]);
+      bar.setAttribute("opacity", "0.82");
+    });
+    hit.addEventListener("pointerleave", () => { hideTip("pen-tip"); bar.removeAttribute("opacity"); });
+  });
+
+  svgEl("line", { x1: x(tv), x2: x(tv), y1: mt - 14, y2: plotBottom, stroke: css("--accent"), "stroke-width": 2 }, svg);
+  const lab = text(svg, x(tv) + 6, mt - 8, `A saved timeout: ${pct(tv)}`, "value");
+  lab.setAttribute("fill", css("--ink"));
+
+}
+
+/* ---------- audit ---------- */
+function renderAudit() {
+  const svg = $("audit");
+  clear(svg);
+  const A = D.audit;
+  const purposes = A.purposes;
+  const W = 760, ml = 214, mr = 64, mt = 10, rh = 36, xmax = 2.2;
+  const H = mt + purposes.length * rh + 40;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const x = (v) => ml + (v / xmax) * (W - ml - mr);
+  const plotBottom = mt + purposes.length * rh;
+
+  [0, 0.5, 1, 1.5, 2].forEach((g) => {
+    svgEl("line", { x1: x(g), x2: x(g), y1: mt, y2: plotBottom, stroke: css("--grid"), "stroke-width": 1 }, svg);
+    text(svg, x(g), plotBottom + 16, g.toFixed(1), "tick", "middle");
+  });
+  text(svg, x(xmax / 2), plotBottom + 32, "TIMEOUTS PER GAME", "axis-title", "middle");
+  text(svg, W - 4, mt + 8, "Brown", "tick", "end");
+
+  purposes.forEach((p, i) => {
+    const cy = mt + i * rh + rh / 2 + 6;
+    text(svg, ml - 12, cy + 4, PURPOSE[p], "rowlabel", "end");
+    const vals = GROUPS.map((g) => A.rates[g][p]);
+    svgEl("line", { x1: x(Math.min(...vals)), x2: x(Math.max(...vals)), y1: cy, y2: cy,
+      stroke: css("--axis"), "stroke-width": 2, "stroke-linecap": "round" }, svg);
+    // draw Brown last so it sits on top
+    [...GROUPS].reverse().forEach((g) => {
+      svgEl("circle", { cx: x(A.rates[g][p]), cy, r: 5.5, fill: css(GROUP_VAR[g]),
+        stroke: css("--surface"), "stroke-width": 2 }, svg);
+    });
+    text(svg, W - 4, cy + 4, A.rates.Brown[p].toFixed(2), "value", "end");
+    const hit = svgEl("rect", { x: 0, y: mt + i * rh, width: W, height: rh, fill: "transparent" }, svg);
+    hit.addEventListener("pointermove", (evt) => {
+      showTip("audit-tip", $("audit-card"), evt, [
+        [`${PURPOSE[p]}, per game`, "sub"],
+        ...GROUPS.map((g) => [`${A.rates[g][p].toFixed(2)}  ${GROUP_LABEL[g]}`, g === "Brown" ? "big" : ""])
+      ]);
+    });
+    hit.addEventListener("pointerleave", () => hideTip("audit-tip"));
+  });
+
+  const lg = $("audit-legend");
+  clear(lg);
+  GROUPS.forEach((g) => {
+    const item = html("span", "item", undefined, lg);
+    const dot = html("span", "swatch-dot", undefined, item);
+    dot.style.background = css(GROUP_VAR[g]);
+    html("span", "", `${GROUP_LABEL[g]} (${A.rates[g].games.toLocaleString()} games)`, item);
+  });
+
+  // table view twin
+  const wrap = $("audit-table");
+  clear(wrap);
+  const table = html("table", "", undefined, wrap);
+  const head = html("tr", "", undefined, html("thead", "", undefined, table));
+  html("th", "", "Used for", head);
+  GROUPS.forEach((g) => html("th", "n", GROUP_LABEL[g], head));
+  const body = html("tbody", "", undefined, table);
+  purposes.forEach((p) => {
+    const tr = html("tr", "", undefined, body);
+    html("td", "", PURPOSE[p], tr);
+    GROUPS.forEach((g) => html("td", "n", A.rates[g][p].toFixed(2), tr));
+  });
+  const tot = html("tr", "", undefined, body);
+  html("td", "", "Total", tot);
+  GROUPS.forEach((g) => html("td", "n", A.rates[g].total.toFixed(2), tot));
+}
+
+function renderTables() {
+  const tv = D.option_value.one_score;
+  const pc = $("pc-table");
+  clear(pc);
+  html("caption", "", "Brown's play-clock timeouts: were they worth it?", pc);
+  let head = html("tr", "", undefined, html("thead", "", undefined, pc));
+  ["Game", "Time", "Down & distance", "Score", "Timeouts left", "Penalty would have cost", "Verdict"].forEach((h, i) =>
+    html("th", i === 4 || i === 5 ? "n" : "", h, head));
+  let body = html("tbody", "", undefined, pc);
+  for (const r of D.brown_log) {
+    const tr = html("tr", "", undefined, body);
+    html("td", "", `${r.season} vs ${team(r.opponent)}`, tr);
+    html("td", "", `Q${r.quarter} ${clock(r.clock)}`, tr);
+    const goal = r.ytg <= r.distance;
+    html("td", "", `${ord(r.down)} & ${goal ? "goal" : r.distance}, ${spot(r.ytg)}`, tr);
+    html("td", "", leadText(r.lead), tr);
+    html("td", "n", String(r.left_after), tr);
+    html("td", "n", pct(r.penalty_cost), tr);
+    const cell = html("td", "", undefined, tr);
+    const cheaper = r.penalty_cost > tv;
+    html("span", `chip ${cheaper ? "ok" : "warn"}`, cheaper ? "Right call" : "Penalty was cheaper", cell);
+  }
+  const note = html("tr", "", undefined, body);
+  const td = html("td", "small muted", `"Penalty would have cost" is how much a delay of game would have lowered our chance of winning. A timeout saved for later is worth about ${pct(tv)}, so each of these timeouts was the cheaper choice. The real cost is whatever made the play clock run down in the first place.`, note);
+  td.colSpan = 7;
+
+  const lt = $("loss-table");
+  clear(lt);
+  html("caption", "", "Brown's close losses: timeouts left at the end", lt);
+  head = html("tr", "", undefined, html("thead", "", undefined, lt));
+  ["Game", "Lost by", "Timeouts left", ""].forEach((h, i) => html("th", i === 1 || i === 2 ? "n" : "", h, head));
+  body = html("tbody", "", undefined, lt);
+  for (const g of D.close_losses.brown_games) {
+    const tr = html("tr", "", undefined, body);
+    html("td", "", `${g.season} vs ${team(g.opponent)}`, tr);
+    html("td", "n", String(-g.margin), tr);
+    html("td", "n", String(g.unused), tr);
+    const cell = html("td", "", undefined, tr);
+    if (g.unused > 0) html("span", "chip warn", "Check the film", cell);
+    else html("span", "chip ok", "All used", cell);
+  }
+}
+
+/* ---------- calibration & scenario ---------- */
+function renderCalibration() {
+  const svg = $("cal");
+  clear(svg);
+  const W = 420, H = 330, ml = 46, mr = 12, mt = 10, mb = 44;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const x = (v) => ml + v * (W - ml - mr);
+  const y = (v) => mt + (1 - v) * (H - mt - mb);
+  [0, 0.25, 0.5, 0.75, 1].forEach((g) => {
+    svgEl("line", { x1: x(0), x2: x(1), y1: y(g), y2: y(g), stroke: css("--grid"), "stroke-width": 1 }, svg);
+    svgEl("line", { x1: x(g), x2: x(g), y1: y(0), y2: y(1), stroke: css("--grid"), "stroke-width": 1 }, svg);
+    text(svg, ml - 8, y(g) + 4, `${g * 100}%`, "tick", "end");
+    text(svg, x(g), H - mb + 16, `${g * 100}%`, "tick", "middle");
+  });
+  svgEl("line", { x1: x(0), y1: y(0), x2: x(1), y2: y(1), stroke: css("--axis"), "stroke-width": 1.5 }, svg);
+  text(svg, x(0.5), H - 8, "OUR PREDICTED CHANCE OF WINNING", "axis-title", "middle");
+  const yt = text(svg, 12, y(0.5), "HOW OFTEN THOSE TEAMS WON", "axis-title", "middle");
+  yt.setAttribute("transform", `rotate(-90 12 ${y(0.5)})`);
+  for (const c of D.calibration) {
+    const dot = svgEl("circle", { cx: x(c.predicted), cy: y(c.actual), r: 5.5, fill: css("--s1"),
+      stroke: css("--surface"), "stroke-width": 2 }, svg);
+    const hit = svgEl("circle", { cx: x(c.predicted), cy: y(c.actual), r: 14, fill: "transparent" }, svg);
+    hit.addEventListener("pointermove", (evt) => {
+      showTip("cal-tip", $("cal-card"), evt, [
+        [`We predicted ${Math.round(c.predicted * 100)}%`, "sub"],
+        [`They won ${Math.round(c.actual * 100)}%`, "big"],
+        [`${c.n.toLocaleString()} plays`, "sub"]
+      ]);
+      dot.setAttribute("r", "7");
+    });
+    hit.addEventListener("pointerleave", () => { hideTip("cal-tip"); dot.setAttribute("r", "5.5"); });
+  }
+}
+
+/* ---------- boot ---------- */
+function renderAll() {
+  renderTimeline();
+  renderRec();
+  renderPenalty();
+  renderPlayTime();
+  renderPlayClock();
+  renderMissed();
+  renderAudit();
+  renderTables();
+  renderCalibration();
+}
+bindRec();
+bindPlayTime();
+$("audit-table-toggle").addEventListener("click", (e) => {
+  const wrap = $("audit-table");
+  wrap.hidden = !wrap.hidden;
+  e.currentTarget.setAttribute("aria-expanded", String(!wrap.hidden));
+  e.currentTarget.textContent = wrap.hidden ? "Show as table" : "Hide table";
+});
+renderAll();
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+new MutationObserver(renderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>
