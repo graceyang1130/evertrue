@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Brown Fourth-Down Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a sideline decision board. Three rules up top, then one section per
+   decision: the rule in words, the chart that backs it, the table behind it. */
+:root {
+  --bg: #f5f4f1;
+  --surface: #fcfcfb;
+  --ink: #211915;
+  --ink-2: #57504a;
+  --muted: #847e77;
+  --grid: #e3e1da;
+  --axis: #c3c2b7;
+  --line: rgba(33, 25, 21, 0.11);
+  --accent: #a3171c;
+  --warn: #c7700f;
+  --zero: #eceae4;
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s3: #1baf7a;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121110; --surface: #1a1a19; --ink: #f3efea; --ink-2: #c3c2b7;
+    --muted: #8f8a83; --grid: #2c2c2a; --axis: #3a3936;
+    --line: rgba(255, 255, 255, 0.11); --accent: #e5484d; --warn: #f0a13a;
+    --zero: #262624; --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+    --scheme: dark; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121110; --surface: #1a1a19; --ink: #f3efea; --ink-2: #c3c2b7;
+  --muted: #8f8a83; --grid: #2c2c2a; --axis: #3a3936;
+  --line: rgba(255, 255, 255, 0.11); --accent: #e5484d; --warn: #f0a13a;
+  --zero: #262624; --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+  --scheme: dark; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-inline: 20px;
+  padding-block: 28px 64px;
+  display: grid;
+  gap: 56px;
+}
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.05;
+  margin: 0;
+  text-wrap: balance;
+  letter-spacing: 0.01em;
+}
+h1 { font-size: clamp(38px, 6vw, 56px); text-transform: uppercase; }
+h2 { font-size: clamp(26px, 3.6vw, 34px); text-transform: uppercase; }
+h3 { font-size: 20px; text-transform: uppercase; letter-spacing: 0.03em; }
+p { margin: 0; max-width: 66ch; }
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+/* header with a yard-line hash strip */
+header { display: grid; gap: 14px; }
+header .lede { color: var(--ink-2); font-size: 17px; }
+.hash {
+  height: 14px;
+  border-top: 2px solid var(--ink);
+  background:
+    repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 10%) top left / 100% 7px no-repeat;
+  opacity: 0.85;
+}
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.answer {
+  border-left: 3px solid var(--accent);
+  padding: 4px 0 4px 16px;
+  display: grid;
+  gap: 6px;
+  max-width: 70ch;
+}
+.answer .label {
+  font-family: var(--font-display); font-weight: 600; font-size: 13px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.answer p { font-size: 18px; line-height: 1.5; color: var(--ink); }
+
+section { display: grid; gap: 18px; }
+section > header { gap: 8px; }
+
+/* the three sideline rules */
+.rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.rule {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 18px 18px 20px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+}
+.rule .when {
+  font-family: var(--font-display); font-weight: 600; font-size: 13px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.rule .call { font-family: var(--font-display); font-weight: 700; font-size: 26px; line-height: 1.05; text-transform: uppercase; }
+.rule .figure { font-family: var(--font-display); font-weight: 700; font-size: 44px; line-height: 1; }
+.rule .figure small { font-size: 18px; font-weight: 600; color: var(--muted); margin-left: 4px; }
+.rule p { font-size: 14px; color: var(--ink-2); }
+
+/* chart cards */
+figure { margin: 0; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 16px 16px 12px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  position: relative;
+}
+.chart-scroll { overflow-x: auto; }
+.chart-scroll svg { display: block; width: 100%; min-width: 560px; height: auto; }
+figcaption { font-size: 13px; color: var(--muted); max-width: 80ch; }
+svg text { font-family: var(--font-body); }
+svg .tick { fill: var(--muted); font-size: 11px; }
+svg .rowlabel { fill: var(--ink-2); font-size: 11.5px; }
+svg .axis-title { fill: var(--muted); font-size: 11.5px; letter-spacing: 0.04em; }
+svg .value { fill: var(--ink); font-size: 12px; font-family: var(--font-data); }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.control { display: flex; align-items: center; gap: 8px; }
+.control > span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 6px; overflow: hidden; }
+.seg button {
+  font: 500 13px var(--font-body);
+  color: var(--ink-2);
+  background: transparent;
+  border: 0;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--axis); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.seg button:focus-visible, .toggle input:focus-visible, button.link:focus-visible {
+  outline: 2px solid var(--s1); outline-offset: 2px;
+}
+.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+button.link {
+  font: 500 13px var(--font-body); color: var(--ink-2); background: none; border: 1px solid var(--axis);
+  border-radius: 6px; padding: 5px 10px; cursor: pointer; justify-self: start;
+}
+
+/* legends */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 13px; color: var(--ink-2); }
+.legend .item { display: inline-flex; align-items: center; gap: 7px; }
+.swatch-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.ramp { width: 160px; height: 10px; border-radius: 2px; display: inline-block; }
+.ramp-wrap { display: inline-grid; gap: 2px; }
+.ramp-ticks { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-family: var(--font-data); }
+.zero-swatch { width: 14px; height: 10px; border-radius: 2px; display: inline-block; background: var(--zero); border: 1px solid var(--line); }
+.keep-swatch { width: 9px; height: 9px; display: inline-block; background: var(--accent); transform: rotate(45deg); }
+
+/* tooltip */
+.tip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  min-width: 180px;
+  max-width: 260px;
+  z-index: 5;
+}
+.tip .big { font-family: var(--font-data); font-weight: 500; font-size: 15px; color: var(--ink); }
+.tip .sub { color: var(--muted); }
+
+/* tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.tile {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  padding: 14px 16px; display: grid; gap: 4px; min-width: 0;
+}
+.tile .label { font-size: 13px; color: var(--muted); }
+.tile .value { font-family: var(--font-display); font-weight: 700; font-size: 36px; line-height: 1.05; }
+.tile .compare { font-size: 13px; color: var(--ink-2); }
+
+/* tables */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+caption { text-align: left; font-family: var(--font-display); font-weight: 700; font-size: 18px; text-transform: uppercase; letter-spacing: 0.03em; padding-bottom: 8px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { font-size: 12px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+td.n, th.n { text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  font-size: 12.5px; font-weight: 500; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line);
+}
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip.ok { color: var(--ink-2); }
+.chip.ok::before { background: var(--s3); }
+.chip.warn { color: var(--ink); border-color: var(--warn); }
+.chip.warn::before { background: var(--warn); }
+
+.two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; align-items: start; }
+.method { display: grid; gap: 10px; }
+.method ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; max-width: 78ch; }
+.method li { color: var(--ink-2); }
+.method code { font-family: var(--font-data); font-size: 13px; }
+footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; }
+
+/* the math section */
+.formula {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+}
+.formula-line {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(21px, 3vw, 30px);
+  text-transform: uppercase;
+  line-height: 1.15;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+}
+.formula-line .op { color: var(--accent); }
+.formula .two-col p, .strategy li { font-size: 14.5px; color: var(--ink-2); }
+.strategy ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
+table.rule-grid th, table.rule-grid td { text-align: center; }
+table.rule-grid th:first-child, table.rule-grid td:first-child { text-align: left; }
+.pill {
+  display: inline-block; min-width: 64px; padding: 2px 10px; border-radius: 999px;
+  font-weight: 600; font-size: 13px; text-align: center;
+}
+.pill.call { background: var(--s1); color: #ffffff; }
+.pill.wait { border: 1.5px solid var(--s3); color: var(--ink); }
+
+/* selects and extra legend swatches */
+select {
+  font: 500 13px var(--font-body);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--axis);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+select:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+select:disabled { opacity: 0.45; }
+.sq-swatch { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+.hatch-swatch {
+  width: 14px; height: 10px; display: inline-block; border-radius: 2px; border: 1px solid var(--line);
+  background: repeating-linear-gradient(45deg, var(--axis) 0 1.5px, transparent 1.5px 5px);
+}
+.outline-swatch { width: 14px; height: 10px; display: inline-block; border-radius: 2px; border: 1.5px solid var(--axis); }
+
+@media (max-width: 520px) {
+  body { font-size: 14px; }
+  .page { padding-inline: 16px; gap: 44px; }
+  .rule .figure { font-size: 38px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .seg button { transition: background 120ms ease, color 120ms ease; }
+}
+</style>
+</head>
+<body>
+<!--
+  EDITING THIS PAGE
+  Every sentence on the page is plain HTML below: change any wording you like.
+  In fourth_template.html, numbers written in double curly braces are filled
+  in from the data when build_card.py runs. The card and charts are drawn by
+  the script at the bottom of the file; chart labels and hover text live there.
+-->
+<div class="page">
+  <header>
+    <div class="eyebrow">Brown Football &#xb7; Game management</div>
+    <h1>Brown Fourth-Down Card</h1>
+    <p class="lede">Go for it, punt, or kick? A lookup card in the same layout as our 4th-down sheet, where every square is worked out from our chance of winning, and the filters above it let us set the score, the time, the matchup and whose rates to use.</p>
+    <div class="hash" aria-hidden="true"></div>
+    <div class="meta">
+      <span>Every FBS and FCS game, 2023 to 2026</span>
+      <span>171,033 third and fourth downs</span>
+      <span>16,154 field goal tries</span>
+      <span>Data: PFF Ultimate</span>
+    </div>
+  </header>
+
+  <div class="answer">
+    <div class="label">The short answer</div>
+    <p id="short-answer">In a close game, going for it is right far more often than the old habit of punting. Go on 4th &amp; 1 or 2 anywhere on the field, and on 4th &amp; 3 almost anywhere. On our side of the field, punt on 4th &amp; 4 or longer. From about midfield to their 30, go on 4th &amp; 4 to 8; inside their 30, kick the field goal on longer distances. Behind late, go even more: down 3 with 2:00 left, go on 4th &amp; 1 to 6 almost anywhere. Faded squares on the card are close calls where either choice is fine.</p>
+  </div>
+
+  <section aria-labelledby="card-h">
+    <header>
+      <div class="eyebrow">The card</div>
+      <h2 id="card-h">Go, punt, or kick?</h2>
+      <p>Rows are the distance to go on 4th down, columns are where the ball is. Each square shows the option that gives us the best chance of winning. Faded squares are close calls, within 1% either way. Hover over any square to see all three options side by side.</p>
+    </header>
+    <figure class="card" id="fd-card">
+      <div class="controls">
+        <div class="control"><span>Score</span><select id="fd-lead" aria-label="Score"></select></div>
+        <div class="control"><span>Quarter</span>
+          <div class="seg" role="group" aria-label="Quarter">
+            <button type="button" data-q="1" aria-pressed="false">1</button>
+            <button type="button" data-q="2" aria-pressed="false">2</button>
+            <button type="button" data-q="3" aria-pressed="true">3</button>
+            <button type="button" data-q="4" aria-pressed="false">4</button>
+          </div>
+        </div>
+        <div class="control"><span>Time left</span><select id="fd-clock" aria-label="Time left in the quarter"></select></div>
+      </div>
+      <div class="controls">
+        <div class="control"><span>Teams</span>
+          <select id="fd-strength" aria-label="Team strength">
+            <option value="0">Evenly matched</option>
+            <option value="7">We're better (by 7 a game)</option>
+            <option value="-7">They're better (by 7 a game)</option>
+          </select>
+        </div>
+        <div class="control"><span>Rates</span>
+          <div class="seg" role="group" aria-label="Whose rates">
+            <button type="button" data-rates="avg" aria-pressed="true">FBS &amp; FCS average</button>
+            <button type="button" data-rates="brown" aria-pressed="false">Brown's own</button>
+          </div>
+        </div>
+        <div class="control"><span>Longest field goal we'd try</span>
+          <select id="fd-maxfg" aria-label="Longest field goal">
+            <option value="40">40 yards</option>
+            <option value="45">45 yards</option>
+            <option value="50" selected>50 yards</option>
+            <option value="55">55 yards</option>
+          </select>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="control"><span>Show</span>
+          <div class="seg" role="group" aria-label="What each square shows">
+            <button type="button" data-show="call" aria-pressed="true">The call</button>
+            <button type="button" data-show="convert" aria-pressed="false">Conversion % needed</button>
+            <button type="button" data-show="gain" aria-pressed="false">Win chance gained</button>
+          </div>
+        </div>
+      </div>
+      <div class="legend" id="fd-legend"></div>
+      <div class="chart-scroll"><svg id="fd" role="img" aria-labelledby="card-h"></svg></div>
+      <figcaption id="fd-caption"></figcaption>
+      <div class="tip" id="fd-tip" hidden></div>
+    </figure>
+  </section>
+
+  <section aria-labelledby="math-h">
+    <header>
+      <div class="eyebrow">The math</div>
+      <h2 id="math-h">How each square is worked out</h2>
+      <p>Each option leads to a few possible next situations. We know how often each one happens, and our chance of winning from each, so we average them. The option with the higher average wins the square.</p>
+    </header>
+    <div class="formula">
+      <div class="two-col">
+        <div>
+          <h3>Go for it</h3>
+          <p>How often we convert &times; our chance after a first down (or a touchdown), plus how often we fail &times; our chance after they take over right here.</p>
+        </div>
+        <div>
+          <h3>Punt</h3>
+          <p>Our chance after they take over where our punts usually leave them. Punts from deep go farther: from our own 30 they typically start around their 30, from our own 5 around their 53, and almost never inside their 14.</p>
+        </div>
+        <div>
+          <h3>Field goal</h3>
+          <p>How often we make it from this distance (the spot plus 17 yards) &times; our chance up 3 more with them receiving the kickoff, plus how often we miss &times; our chance after they take over at the spot of the kick (or their 20).</p>
+        </div>
+        <div>
+          <h3>Chance of winning</h3>
+          <p>The same estimate as our timeout work: the score, how many points the next drive is likely to produce, how much time is left, and how good each team is.</p>
+        </div>
+      </div>
+    </div>
+    <p class="small muted">"Conversion % needed" is the break-even: if we convert at least that often, going is better than the best kick. Compare it with how often teams actually convert at that distance (the chart below).</p>
+  </section>
+
+  <section aria-labelledby="rates-h">
+    <header>
+      <div class="eyebrow">The rates behind the card</div>
+      <h2 id="rates-h">How often teams convert and make kicks</h2>
+      <p>These come from every FBS and FCS game since 2023. With "Brown's own" selected, each curve is shifted to match Brown's results over the same seasons: conversions about average (588 snaps), field goals below average, about 52% from 40 yards against 69% (43 kicks), punts about 2 yards worse than average (122 punts).</p>
+    </header>
+    <div class="two-col">
+      <figure class="card" id="cv-card">
+        <h3>Conversion rate on 3rd and 4th down</h3>
+        <div class="chart-scroll"><svg id="conv" role="img" aria-label="Conversion rate by yards to go"></svg></div>
+        <figcaption>Share of 3rd and 4th downs that gained a first down or a touchdown, by yards to go. Bars are what happened; the line is the smooth fit the card uses.</figcaption>
+        <div class="tip" id="cv-tip" hidden></div>
+      </figure>
+      <figure class="card" id="fg-card">
+        <h3>Field goal make rate</h3>
+        <div class="chart-scroll"><svg id="fgm" role="img" aria-label="Field goal make rate by distance"></svg></div>
+        <figcaption>Share of field goal tries made, by kick distance. Bars are what happened; the line is the smooth fit the card uses.</figcaption>
+        <div class="tip" id="fg-tip" hidden></div>
+      </figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="method-h" class="method">
+    <h2 id="method-h">How we did it</h2>
+    <ul>
+      <li>The data: play-by-play for every FBS and FCS game since 2023 from PFF (5,578 games).</li>
+      <li>Converting: 171,033 third and fourth downs, fitted by yards to go, with a small penalty inside the 5 where the field is tight. Third and fourth downs convert at nearly the same rate at each distance, so we use both.</li>
+      <li>Field goals: 16,154 tries, fitted by kick distance. A made kick puts us up 3 and they get the ball after the kickoff (we use their 25). A miss gives them the ball at the spot of the kick, or their 20.</li>
+      <li>Punts: we use where the other team actually starts after punts, which already includes returns, touchbacks and fair catches.</li>
+      <li>A successful conversion is treated as a first down right at the sticks (or a touchdown when it's 4th and goal), so the card slightly undersells going for it. Blocked kicks and punt-return touchdowns are counted only as far as they show up in the averages.</li>
+      <li>Brown's own rates move each whole curve up or down by one amount, fitted to Brown's results since 2023. That keeps a small sample from bending the curve in odd places. Brown's field goal numbers come from only 43 kicks, so treat that setting with care.</li>
+      <li>All numbers are changes in our chance of winning. Going from 30% to 32% is shown as +2%.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div class="hash" aria-hidden="true"></div>
+    <div>Companion page: <a href="https://claude.ai/artifact/TA2drfwmCi8QXEVibSb64n">Brown Timeout Decisions</a>. To update after new games: rebuild the data in <code>tos/</code>, then run <code>fourth_data.py</code> and <code>build_card.py</code> in <code>fourth_down/</code>.</div>
+  </footer>
+</div>
+
+<script>
+const D = {"wp_params":{"a":1.044,"b":1.0516,"sigma":14.2203,"c":1.9197},"conversion":{"b0":1.1401,"b_log_dist":-0.934,"b_goal_line":-0.4373,"n":171033,"brown_shift":0.016,"brown_n":588,"by_distance":[{"distance":1,"n":21506,"actual":0.727,"fitted":0.746},{"distance":2,"n":15314,"actual":0.595,"fitted":0.61},{"distance":3,"n":14711,"actual":0.525,"fitted":0.52},{"distance":4,"n":14321,"actual":0.475,"fitted":0.455},{"distance":5,"n":14033,"actual":0.425,"fitted":0.405},{"distance":6,"n":13804,"actual":0.388,"fitted":0.37},{"distance":7,"n":12626,"actual":0.352,"fitted":0.337},{"distance":8,"n":11596,"actual":0.323,"fitted":0.31},{"distance":9,"n":9893,"actual":0.3,"fitted":0.287},{"distance":10,"n":14095,"actual":0.277,"fitted":0.267},{"distance":11,"n":5572,"actual":0.258,"fitted":0.25},{"distance":12,"n":4435,"actual":0.23,"fitted":0.235},{"distance":13,"n":3468,"actual":0.206,"fitted":0.222},{"distance":14,"n":2825,"actual":0.185,"fitted":0.21},{"distance":15,"n":12834,"actual":0.117,"fitted":0.178}]},"field_goal":{"b0":3.9036,"b_dist":-0.078,"n":16154,"brown_shift":-0.718,"brown_n":43,"by_distance":[{"range":"(0, 30]","n":5157,"actual":0.877,"fitted":0.873},{"range":"(30, 35]","n":2615,"actual":0.778,"fitted":0.79},{"range":"(35, 40]","n":2723,"actual":0.724,"fitted":0.719},{"range":"(40, 45]","n":2599,"actual":0.625,"fitted":0.635},{"range":"(45, 50]","n":2004,"actual":0.548,"fitted":0.544},{"range":"(50, 55]","n":908,"actual":0.467,"fitted":0.453},{"range":"(55, 60]","n":136,"actual":0.375,"fitted":0.362}]},"punt":{"floor":14.0,"a":-35.18,"b":0.924,"brown_shift":1.89,"brown_n":122,"n":42102},"ep_first_down":{"30":[5.623,5.521,5.424,5.323,5.123,4.928,4.73,4.575,4.429,4.302,4.199,4.113,4.044,4.009,3.956,3.885,3.805,3.729,3.654,3.554,3.45,3.35,3.265,3.174,3.086,2.984,2.902,2.802,2.708,2.615,2.53,2.423,2.329,2.231,2.156,2.082,1.97,1.843,1.726,1.61,1.503,1.398,1.297,1.233,1.186,1.146,1.101,1.044,0.989,0.939,0.895,0.85,0.8,0.759,0.733,0.706,0.671,0.629,0.595,0.573,0.55,0.518,0.487,0.462,0.446,0.43,0.41,0.39,0.378,0.365,0.354,0.328,0.303,0.284,0.264,0.245,0.228,0.209,0.205,0.193,0.181,0.168,0.156,0.144,0.133,0.121,0.114,0.106,0.098,0.09,0.081,0.073,0.062,0.045,0.028,0.013,0.005,-0.006,-0.023],"60":[5.781,5.692,5.604,5.51,5.322,5.143,4.961,4.808,4.671,4.552,4.457,4.379,4.315,4.281,4.218,4.132,4.038,3.948,3.863,3.771,3.677,3.599,3.536,3.483,3.434,3.372,3.309,3.252,3.203,3.16,3.108,3.037,2.967,2.908,2.853,2.796,2.697,2.587,2.48,2.38,2.277,2.174,2.064,1.992,1.933,1.882,1.832,1.779,1.726,1.68,1.636,1.581,1.524,1.471,1.424,1.368,1.315,1.251,1.206,1.162,1.117,1.065,1.022,0.984,0.962,0.939,0.917,0.89,0.864,0.838,0.811,0.754,0.7,0.656,0.616,0.582,0.548,0.508,0.497,0.478,0.459,0.437,0.414,0.388,0.367,0.339,0.315,0.292,0.265,0.24,0.219,0.199,0.183,0.161,0.139,0.125,0.117,0.105,0.088],"120":[5.838,5.757,5.671,5.579,5.403,5.235,5.052,4.9,4.762,4.647,4.554,4.48,4.417,4.383,4.318,4.228,4.131,4.034,3.939,3.839,3.731,3.642,3.569,3.508,3.455,3.391,3.327,3.273,3.226,3.187,3.136,3.071,3.008,2.955,2.904,2.854,2.782,2.712,2.639,2.573,2.505,2.438,2.376,2.333,2.291,2.257,2.209,2.159,2.106,2.043,1.98,1.925,1.88,1.839,1.803,1.761,1.727,1.694,1.661,1.625,1.604,1.563,1.518,1.467,1.422,1.376,1.323,1.27,1.231,1.206,1.186,1.121,1.055,0.998,0.941,0.888,0.834,0.777,0.764,0.743,0.724,0.701,0.677,0.645,0.613,0.574,0.538,0.502,0.461,0.421,0.39,0.365,0.344,0.313,0.282,0.26,0.248,0.232,0.207],"180":[5.956,5.868,5.777,5.689,5.526,5.37,5.22,5.1,5.0,4.925,4.866,4.817,4.779,4.757,4.7,4.618,4.526,4.438,4.345,4.235,4.123,4.029,3.942,3.859,3.778,3.693,3.619,3.535,3.463,3.404,3.343,3.256,3.154,3.063,2.989,2.914,2.827,2.742,2.664,2.605,2.539,2.474,2.414,2.364,2.315,2.276,2.218,2.155,2.088,2.01,1.933,1.864,1.805,1.756,1.718,1.675,1.64,1.602,1.565,1.523,1.494,1.45,1.4,1.344,1.296,1.245,1.193,1.137,1.09,1.054,1.024,0.949,0.877,0.812,0.749,0.694,0.642,0.585,0.573,0.551,0.529,0.504,0.479,0.446,0.415,0.377,0.341,0.306,0.266,0.226,0.195,0.169,0.147,0.114,0.082,0.058,0.046,0.03,0.005],"300":[6.002,5.918,5.838,5.757,5.605,5.461,5.316,5.201,5.102,5.02,4.953,4.898,4.853,4.825,4.781,4.717,4.643,4.573,4.499,4.412,4.323,4.243,4.182,4.125,4.07,4.01,3.962,3.905,3.845,3.787,3.729,3.657,3.584,3.502,3.436,3.378,3.313,3.244,3.17,3.108,3.051,2.995,2.93,2.869,2.813,2.768,2.708,2.649,2.586,2.527,2.47,2.409,2.35,2.285,2.228,2.155,2.089,2.01,1.941,1.879,1.836,1.775,1.717,1.651,1.598,1.543,1.479,1.403,1.332,1.275,1.224,1.125,1.029,0.944,0.872,0.812,0.754,0.691,0.681,0.66,0.64,0.615,0.589,0.556,0.524,0.482,0.443,0.404,0.361,0.318,0.283,0.254,0.23,0.196,0.162,0.131,0.117,0.099,0.071],"480":[6.094,6.012,5.93,5.851,5.704,5.56,5.418,5.306,5.208,5.129,5.064,5.007,4.961,4.93,4.877,4.81,4.736,4.67,4.6,4.517,4.435,4.367,4.31,4.255,4.197,4.133,4.082,4.022,3.956,3.893,3.833,3.761,3.685,3.604,3.541,3.488,3.429,3.366,3.296,3.235,3.174,3.109,3.035,2.963,2.897,2.842,2.777,2.715,2.655,2.599,2.545,2.486,2.428,2.362,2.304,2.228,2.157,2.07,1.995,1.924,1.876,1.815,1.752,1.681,1.625,1.563,1.492,1.406,1.315,1.244,1.179,1.059,0.944,0.842,0.755,0.686,0.617,0.544,0.528,0.505,0.481,0.454,0.428,0.392,0.358,0.318,0.279,0.24,0.192,0.144,0.105,0.072,0.04,-0.009,-0.058,-0.119,-0.143,-0.174,-0.221],"600":[6.094,6.012,5.931,5.852,5.705,5.561,5.419,5.307,5.21,5.131,5.065,5.008,4.963,4.931,4.878,4.811,4.737,4.67,4.6,4.518,4.435,4.367,4.31,4.255,4.197,4.134,4.082,4.022,3.956,3.893,3.833,3.761,3.685,3.605,3.541,3.488,3.43,3.366,3.296,3.235,3.175,3.109,3.034,2.963,2.897,2.842,2.777,2.715,2.656,2.601,2.547,2.488,2.43,2.364,2.306,2.23,2.16,2.072,1.997,1.926,1.878,1.814,1.751,1.68,1.624,1.562,1.491,1.405,1.319,1.249,1.186,1.073,0.967,0.872,0.793,0.731,0.671,0.613,0.61,0.59,0.571,0.547,0.521,0.485,0.444,0.394,0.353,0.312,0.264,0.215,0.176,0.142,0.11,0.062,0.013,-0.054,-0.078,-0.11,-0.158],"720":[6.139,6.057,5.979,5.901,5.754,5.614,5.472,5.361,5.266,5.186,5.121,5.065,5.021,4.99,4.936,4.869,4.795,4.725,4.653,4.567,4.482,4.411,4.352,4.294,4.236,4.172,4.12,4.058,3.986,3.918,3.85,3.771,3.69,3.603,3.534,3.479,3.42,3.357,3.288,3.227,3.166,3.102,3.027,2.955,2.889,2.834,2.768,2.706,2.646,2.59,2.535,2.475,2.415,2.347,2.286,2.207,2.133,2.044,1.966,1.894,1.845,1.778,1.713,1.638,1.576,1.508,1.431,1.34,1.25,1.176,1.111,1.003,0.901,0.811,0.736,0.679,0.625,0.564,0.555,0.533,0.511,0.485,0.457,0.418,0.378,0.33,0.287,0.242,0.19,0.139,0.099,0.067,0.032,-0.026,-0.086,-0.141,-0.168,-0.206,-0.262],"900":[6.161,6.081,6.005,5.927,5.783,5.646,5.504,5.393,5.298,5.219,5.156,5.101,5.061,5.034,4.984,4.92,4.85,4.785,4.717,4.632,4.548,4.479,4.422,4.363,4.305,4.241,4.188,4.129,4.063,4.0,3.938,3.863,3.786,3.704,3.638,3.583,3.523,3.46,3.391,3.33,3.269,3.203,3.129,3.054,2.985,2.926,2.857,2.791,2.729,2.669,2.612,2.55,2.487,2.414,2.348,2.263,2.184,2.087,2.004,1.927,1.874,1.803,1.734,1.657,1.595,1.527,1.451,1.36,1.271,1.197,1.131,1.017,0.909,0.813,0.732,0.669,0.608,0.546,0.539,0.519,0.5,0.476,0.45,0.413,0.373,0.325,0.283,0.242,0.196,0.149,0.113,0.085,0.051,-0.018,-0.086,-0.159,-0.193,-0.241,-0.312],"930":[6.162,6.083,6.006,5.928,5.785,5.647,5.506,5.395,5.3,5.221,5.158,5.104,5.063,5.036,4.986,4.922,4.852,4.787,4.719,4.635,4.55,4.481,4.424,4.365,4.307,4.243,4.191,4.132,4.066,4.003,3.94,3.865,3.789,3.707,3.64,3.585,3.525,3.462,3.393,3.331,3.27,3.204,3.13,3.055,2.985,2.926,2.857,2.791,2.728,2.668,2.612,2.55,2.487,2.414,2.349,2.265,2.186,2.089,2.005,1.928,1.876,1.805,1.736,1.66,1.599,1.531,1.455,1.365,1.275,1.202,1.135,1.02,0.911,0.814,0.733,0.669,0.608,0.544,0.537,0.518,0.499,0.474,0.449,0.412,0.372,0.323,0.28,0.236,0.187,0.137,0.098,0.068,0.03,-0.037,-0.104,-0.174,-0.206,-0.252,-0.32],"960":[6.162,6.083,6.006,5.928,5.785,5.647,5.506,5.395,5.3,5.221,5.158,5.104,5.063,5.036,4.986,4.922,4.852,4.787,4.719,4.635,4.55,4.481,4.424,4.365,4.307,4.243,4.191,4.132,4.066,4.003,3.94,3.865,3.789,3.707,3.64,3.585,3.525,3.462,3.393,3.331,3.27,3.204,3.13,3.055,2.985,2.926,2.857,2.791,2.728,2.668,2.612,2.55,2.487,2.414,2.349,2.265,2.186,2.089,2.005,1.929,1.877,1.81,1.742,1.665,1.604,1.537,1.46,1.369,1.275,1.202,1.135,1.02,0.911,0.814,0.733,0.669,0.608,0.544,0.537,0.518,0.499,0.474,0.449,0.412,0.372,0.323,0.28,0.238,0.19,0.142,0.106,0.078,0.044,-0.024,-0.092,-0.164,-0.197,-0.245,-0.315],"1020":[6.166,6.087,6.01,5.932,5.788,5.65,5.508,5.398,5.302,5.224,5.161,5.107,5.067,5.04,4.991,4.926,4.857,4.792,4.725,4.641,4.558,4.489,4.433,4.375,4.318,4.256,4.205,4.148,4.083,4.022,3.96,3.885,3.808,3.726,3.659,3.604,3.543,3.48,3.411,3.349,3.287,3.22,3.146,3.07,3.0,2.94,2.87,2.804,2.741,2.681,2.625,2.561,2.497,2.423,2.355,2.269,2.188,2.089,2.005,1.929,1.877,1.81,1.741,1.665,1.604,1.536,1.46,1.369,1.275,1.201,1.135,1.019,0.909,0.812,0.729,0.665,0.603,0.537,0.528,0.507,0.486,0.46,0.432,0.391,0.349,0.298,0.253,0.208,0.157,0.106,0.068,0.038,0.001,-0.062,-0.128,-0.213,-0.248,-0.296,-0.368],"1080":[6.167,6.088,6.011,5.933,5.789,5.651,5.51,5.399,5.303,5.225,5.162,5.109,5.069,5.042,4.992,4.928,4.858,4.793,4.726,4.643,4.559,4.491,4.434,4.376,4.32,4.257,4.207,4.149,4.085,4.023,3.962,3.888,3.812,3.731,3.665,3.611,3.552,3.49,3.421,3.359,3.297,3.23,3.155,3.08,3.01,2.951,2.882,2.816,2.754,2.695,2.637,2.571,2.505,2.427,2.356,2.266,2.183,2.086,2.003,1.926,1.876,1.81,1.743,1.665,1.603,1.535,1.458,1.367,1.274,1.201,1.135,1.018,0.907,0.809,0.727,0.661,0.599,0.532,0.523,0.502,0.48,0.454,0.426,0.385,0.342,0.291,0.245,0.199,0.148,0.096,0.058,0.029,-0.008,-0.071,-0.138,-0.198,-0.228,-0.27,-0.333],"1200":[6.161,6.083,6.003,5.926,5.782,5.645,5.504,5.396,5.3,5.225,5.162,5.109,5.069,5.042,4.992,4.928,4.858,4.793,4.726,4.643,4.559,4.491,4.434,4.376,4.32,4.257,4.207,4.149,4.085,4.023,3.963,3.89,3.815,3.735,3.67,3.617,3.559,3.497,3.428,3.366,3.304,3.237,3.162,3.087,3.017,2.958,2.889,2.823,2.761,2.702,2.647,2.584,2.521,2.446,2.378,2.291,2.209,2.108,2.022,1.942,1.888,1.811,1.741,1.663,1.601,1.532,1.455,1.363,1.279,1.206,1.139,1.022,0.911,0.813,0.73,0.664,0.601,0.53,0.517,0.495,0.473,0.447,0.419,0.377,0.338,0.291,0.245,0.199,0.148,0.096,0.058,0.029,-0.008,-0.071,-0.138,-0.209,-0.241,-0.286,-0.353],"1380":[6.17,6.091,6.013,5.935,5.791,5.653,5.512,5.402,5.306,5.229,5.166,5.113,5.073,5.047,4.998,4.934,4.865,4.801,4.734,4.651,4.568,4.5,4.443,4.385,4.328,4.266,4.216,4.158,4.093,4.032,3.972,3.898,3.824,3.744,3.679,3.626,3.568,3.506,3.437,3.375,3.312,3.245,3.17,3.095,3.025,2.964,2.894,2.827,2.764,2.705,2.651,2.589,2.531,2.459,2.392,2.306,2.224,2.122,2.035,1.95,1.894,1.822,1.751,1.673,1.609,1.541,1.464,1.372,1.281,1.208,1.141,1.022,0.909,0.808,0.723,0.655,0.591,0.508,0.486,0.463,0.44,0.413,0.385,0.343,0.314,0.276,0.231,0.185,0.134,0.082,0.044,0.014,-0.022,-0.084,-0.148,-0.226,-0.258,-0.303,-0.371],"1500":[6.183,6.104,6.026,5.947,5.803,5.664,5.522,5.411,5.315,5.237,5.174,5.121,5.081,5.055,5.006,4.943,4.874,4.811,4.744,4.662,4.579,4.511,4.456,4.399,4.343,4.281,4.231,4.174,4.109,4.049,3.99,3.918,3.845,3.766,3.703,3.651,3.594,3.533,3.464,3.403,3.341,3.275,3.201,3.125,3.055,2.996,2.927,2.861,2.799,2.739,2.684,2.62,2.557,2.48,2.41,2.32,2.236,2.134,2.046,1.964,1.909,1.837,1.765,1.687,1.623,1.553,1.475,1.383,1.292,1.219,1.152,1.033,0.919,0.818,0.732,0.663,0.598,0.533,0.53,0.508,0.481,0.448,0.415,0.366,0.313,0.25,0.2,0.154,0.104,0.055,0.021,-0.006,-0.035,-0.089,-0.146,-0.212,-0.241,-0.28,-0.34],"1620":[6.178,6.101,6.023,5.944,5.8,5.662,5.52,5.409,5.311,5.233,5.171,5.117,5.078,5.052,5.003,4.939,4.87,4.807,4.741,4.658,4.575,4.508,4.452,4.395,4.339,4.277,4.227,4.171,4.106,4.045,3.986,3.915,3.841,3.763,3.699,3.648,3.591,3.529,3.462,3.401,3.34,3.273,3.199,3.123,3.054,2.992,2.921,2.855,2.792,2.732,2.677,2.613,2.551,2.475,2.406,2.317,2.234,2.131,2.044,1.963,1.9,1.82,1.741,1.654,1.582,1.504,1.425,1.34,1.257,1.191,1.129,1.014,0.905,0.801,0.712,0.64,0.572,0.51,0.51,0.493,0.471,0.446,0.416,0.365,0.302,0.227,0.169,0.113,0.059,0.012,-0.015,-0.029,-0.043,-0.088,-0.133,-0.181,-0.205,-0.239,-0.29],"1800":[6.21,6.128,6.047,5.967,5.815,5.675,5.533,5.42,5.323,5.246,5.183,5.129,5.09,5.064,5.015,4.952,4.883,4.82,4.754,4.672,4.589,4.521,4.466,4.409,4.353,4.291,4.241,4.184,4.119,4.059,4.0,3.928,3.855,3.776,3.713,3.661,3.604,3.542,3.475,3.414,3.353,3.288,3.214,3.14,3.072,3.013,2.944,2.879,2.818,2.761,2.713,2.658,2.603,2.535,2.474,2.392,2.308,2.2,2.105,2.017,1.954,1.878,1.799,1.721,1.658,1.589,1.511,1.419,1.326,1.253,1.187,1.072,0.963,0.867,0.785,0.721,0.66,0.598,0.588,0.565,0.537,0.495,0.449,0.392,0.327,0.268,0.221,0.179,0.138,0.085,0.043,0.013,-0.038,-0.118,-0.199,-0.273,-0.305,-0.347,-0.41]},"quarter_clocks":[900,720,600,480,300,180,120,60,30],"kickoff_ytg":75,"meta":{"games":5578,"seasons":[2023,2024,2025,2026]}};
+const NS = "http://www.w3.org/2000/svg";
+const RAMP_LIGHT = ["#dbe9fb", "#b7d3f6", "#86b6ef", "#5598e7", "#2a78d6", "#1c5cab", "#104281", "#0d366b"];
+const RAMP_DARK = ["#172a44", "#133563", "#184f95", "#1c5cab", "#2a78d6", "#5598e7", "#86b6ef", "#b7d3f6"];
+
+/* ---------- helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const dark = () => css("--scheme") === "dark";
+const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+const leadText = (l) => (l > 0 ? `Up ${l}` : l < 0 ? `Down ${-l}` : "Tied");
+const yardText = (ytg) => (ytg > 50 ? `our ${100 - ytg}` : ytg < 50 ? `their ${ytg}` : "midfield");
+const pct = (v) => `${v.toFixed(v < 1 ? 2 : 1)}%`;
+
+function svgEl(tag, attrs, parent) {
+  const node = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
+  if (parent) parent.appendChild(node);
+  return node;
+}
+function text(parent, x, y, str, cls, anchor) {
+  // cls "" means no class, so a fill set afterwards isn't overridden by CSS
+  const t = svgEl("text", { x, y, "text-anchor": anchor || "start" }, parent);
+  if (cls !== "") t.setAttribute("class", cls || "tick");
+  t.textContent = str;
+  return t;
+}
+function html(tag, cls, str, parent) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (str !== undefined) node.textContent = str;
+  if (parent) parent.appendChild(node);
+  return node;
+}
+function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function mix(hex, toward, f) {
+  const a = hexToRgb(hex), b = hexToRgb(toward);
+  const c = a.map((x, j) => Math.round(x + (b[j] - x) * f));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+function textOn(fill) {
+  const m = fill.startsWith("#") ? hexToRgb(fill) : fill.match(/\d+/g).map(Number);
+  return (0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]) > 150 ? "#211915" : "#ffffff";
+}
+function showTip(tipId, card, evt, rows) {
+  const tip = $(tipId);
+  clear(tip);
+  for (const [str, cls] of rows) html("div", cls || "", str, tip);
+  tip.hidden = false;
+  const box = card.getBoundingClientRect();
+  let x = evt.clientX - box.left + 14, y = evt.clientY - box.top + 14;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  if (x + w > box.width - 6) x = evt.clientX - box.left - w - 14;
+  if (y + h > box.height - 6) y = evt.clientY - box.top - h - 14;
+  tip.style.left = `${Math.max(6, x)}px`;
+  tip.style.top = `${Math.max(6, y)}px`;
+}
+function hideTip(tipId) { $(tipId).hidden = true; }
+function setPressed(selector, key, value) {
+  document.querySelectorAll(selector).forEach((b) =>
+    b.setAttribute("aria-pressed", String(b.dataset[key] === String(value))));
+}
+
+/* ---------- the go / punt / kick engine ----------
+   Chance of winning uses the same formula as the timeout work (lead +
+   expected points, give or take a spread that shrinks as the clock runs).
+   Each option is the average of its possible next situations. */
+const P = D.wp_params, C = D.conversion, G = D.field_goal;
+
+function erf(x) {
+  const sign = Math.sign(x), a = Math.abs(x), t = 1 / (1 + 0.3275911 * a);
+  const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t
+    + 0.254829592) * t * Math.exp(-a * a);
+  return sign * y;
+}
+const Phi = (z) => 0.5 * (1 + erf(z / Math.SQRT2));
+const sigmoid = (z) => 1 / (1 + Math.exp(-z));
+function wpOffense(lead, ep, secs, strength) {
+  const t = Math.max(secs, 1) / 3600;
+  return Phi((lead + P.a * ep + P.b * strength * t) / (P.sigma * Math.sqrt(t) + P.c));
+}
+
+function convertRate(dist, ytg, brown) {
+  return sigmoid(C.b0 + C.b_log_dist * Math.log(Math.min(Math.max(dist, 1), 20))
+    + C.b_goal_line * (ytg <= 5 ? 1 : 0) + (brown ? C.brown_shift : 0));
+}
+function makeRate(ytg, brown) {
+  return sigmoid(G.b0 + G.b_dist * (ytg + 17) + (brown ? G.brown_shift : 0));
+}
+
+function evaluate(st, dist, ytg) {
+  const gameSecs = (4 - st.q) * 900 + st.clock;
+  const halfSecs = st.q === 1 || st.q === 3 ? 900 + st.clock : st.clock;
+  const epRow = D.ep_first_down[String(halfSecs)];
+  const ep = (y) => epRow[Math.min(99, Math.max(1, Math.round(y))) - 1];
+  const brown = st.rates === "brown";
+  const L = st.lead, s = st.strength;
+  const ours = (lead, e) => wpOffense(lead, e, gameSecs, s) * 100;          // we have the ball
+  const theirs = (lead, e) => (1 - wpOffense(-lead, e, gameSecs, -s)) * 100; // they have it
+
+  const goal = dist >= ytg;
+  const d = goal ? ytg : dist;
+  const conv = convertRate(d, ytg, brown);
+  const success = goal ? theirs(L + 7, ep(D.kickoff_ytg)) : ours(L, ep(ytg - d));
+  const fail = theirs(L, ep(100 - ytg));
+  const go = conv * success + (1 - conv) * fail;
+
+  // where they start after our punt: their yards from their own goal
+  const landing = Math.max(D.punt.floor, D.punt.a + D.punt.b * ytg + (brown ? D.punt.brown_shift : 0));
+  const punt = theirs(L, ep(100 - landing));
+
+  const kick = ytg + 17;
+  let fg = null, make = null, made = null, missed = null;
+  if (kick <= st.maxFg) {
+    make = makeRate(ytg, brown);
+    made = theirs(L + 3, ep(D.kickoff_ytg));
+    missed = theirs(L, ep(100 - Math.max(20, ytg + 7)));
+    fg = make * made + (1 - make) * missed;
+  }
+
+  const options = [["GO", go], ["PUNT", punt]];
+  if (fg !== null) options.push(["FG", fg]);
+  options.sort((a, b) => b[1] - a[1]);
+  const kickBest = Math.max(punt, fg === null ? -1 : fg);
+  const breakeven = success > fail ? (kickBest - fail) / (success - fail) : null;
+  return {
+    goal, d, conv, success, fail, go, punt, landing, kick, make, fg,
+    call: options[0][0], best: options[0][1], margin: options[0][1] - options[1][1],
+    second: options[1][0], breakeven, kickBest
+  };
+}
+
+/* ---------- the card ---------- */
+const st = { lead: 0, q: 3, clock: 600, strength: 0, rates: "avg", maxFg: 50, show: "call" };
+const DISTANCES = Array.from({ length: 15 }, (_, i) => i + 1);
+const SPOTS = Array.from({ length: 19 }, (_, i) => 95 - 5 * i);      // yards to their goal
+const CALL_VAR = { GO: "--s1", PUNT: "--s2", FG: "--s3" };
+const CALL_LABEL = { GO: "Go for it", PUNT: "Punt", FG: "Field goal" };
+
+function renderCard() {
+  const svg = $("fd");
+  clear(svg);
+  const W = 780, ml = 70, mr = 8, mt = 46, ch = 25;
+  const cw = (W - ml - mr) / SPOTS.length;
+  const H = mt + DISTANCES.length * ch + 12;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const half = ml + 9 * cw;
+  text(svg, ml + (half - ml) / 2, 14, "OUR SIDE OF THE FIELD", "axis-title", "middle");
+  text(svg, half + cw + (W - mr - half - cw) / 2, 14, "THEIR SIDE OF THE FIELD", "axis-title", "middle");
+  text(svg, ml - 8, mt - 10, "Ball on", "tick", "end");
+  SPOTS.forEach((ytg, j) => {
+    const label = ytg === 50 ? "50" : String(ytg > 50 ? 100 - ytg : ytg);
+    text(svg, ml + j * cw + cw / 2, mt - 10, label, "tick", "middle");
+  });
+  const surface = css("--surface");
+
+  DISTANCES.forEach((dist, i) => {
+    const y = mt + i * ch;
+    text(svg, ml - 8, y + ch / 2 + 4, `4th & ${dist}`, "rowlabel", "end");
+    SPOTS.forEach((ytg, j) => {
+      const x = ml + j * cw;
+      const r = evaluate(st, dist, ytg);
+      const base = css(CALL_VAR[r.call]);
+      const close = r.margin < 1;
+      const fill = close ? mix(base, surface, 0.55) : base;
+      const rect = svgEl("rect", { x: x + 1, y: y + 1, width: cw - 2, height: ch - 2, rx: 2, fill }, svg);
+      let label = r.call;
+      if (st.show === "convert") label = r.breakeven === null ? "-" : `${Math.round(Math.min(Math.max(r.breakeven, 0), 1) * 100)}%`;
+      if (st.show === "gain") label = `+${r.margin.toFixed(1)}`;
+      const t = text(svg, x + cw / 2, y + ch / 2 + 3.5, label, "", "middle");
+      t.setAttribute("fill", textOn(fill));
+      t.setAttribute("font-size", label.length > 3 ? "9.5" : "10");
+      t.setAttribute("font-family", "IBM Plex Mono, ui-monospace, monospace");
+      if (r.goal) t.setAttribute("font-style", "italic");
+
+      const hit = svgEl("rect", { x, y, width: cw, height: ch, fill: "transparent" }, svg);
+      hit.addEventListener("pointermove", (evt) => {
+        const rows = [
+          [`4th & ${r.goal ? "goal" : dist} at ${yardText(ytg)} \u00b7 ${leadText(st.lead)} \u00b7 Q${st.q} ${clock(st.clock)}`, "sub"],
+          [`${CALL_LABEL[r.call]}: ${Math.round(r.best)}% chance of winning`, "big"],
+          [`${r.margin < 1 ? "Close call: " : ""}${pct(r.margin)} better than ${CALL_LABEL[r.second].toLowerCase()}`, ""],
+          [`Go for it: ${r.go.toFixed(1)}% (we convert ${Math.round(r.conv * 100)}% of the time)`, ""],
+          [`Punt: ${r.punt.toFixed(1)}% (they start at their ${Math.round(r.landing)})`, ""],
+          [r.fg === null ? `Field goal: ${r.kick}-yard try is past our range` :
+            `Field goal: ${r.fg.toFixed(1)}% (${r.kick}-yard try, made ${Math.round(r.make * 100)}% of the time)`, ""]
+        ];
+        if (r.breakeven !== null) {
+          rows.push([`Going is right if we convert at least ${Math.round(Math.min(Math.max(r.breakeven, 0), 1) * 100)}% of the time`, "sub"]);
+        }
+        showTip("fd-tip", $("fd-card"), evt, rows);
+        rect.setAttribute("opacity", "0.82");
+      });
+      hit.addEventListener("pointerleave", () => { hideTip("fd-tip"); rect.removeAttribute("opacity"); });
+    });
+  });
+
+  const lg = $("fd-legend");
+  clear(lg);
+  ["GO", "PUNT", "FG"].forEach((c) => {
+    const item = html("span", "item", undefined, lg);
+    html("span", "sq-swatch", undefined, item).style.background = css(CALL_VAR[c]);
+    html("span", "", CALL_LABEL[c], item);
+  });
+  const close = html("span", "item", undefined, lg);
+  html("span", "sq-swatch", undefined, close).style.background = mix(css("--s1"), surface, 0.55);
+  html("span", "", "Faded: close call (within 1%)", close);
+  const it = html("span", "item", undefined, lg);
+  html("span", "", "Italic: 4th and goal", it);
+
+  const shows = {
+    call: "Each square names the best option.",
+    convert: "Each square shows the conversion rate at which going for it beats the best kick. If we convert more often than that, go.",
+    gain: "Each square shows how much the best option adds to our chance of winning over the next best."
+  };
+  $("fd-caption").textContent = `${leadText(st.lead)}, ${st.q}${["st", "nd", "rd", "th"][st.q - 1]} quarter, ${clock(st.clock)} left, ${st.rates === "brown" ? "Brown's own rates" : "FBS and FCS average rates"}, field goals up to ${st.maxFg} yards. ${shows[st.show]}`;
+}
+
+function bindCard() {
+  const lead = $("fd-lead");
+  for (let l = 16; l >= -16; l--) html("option", "", leadText(l), lead).value = String(l);
+  lead.value = String(st.lead);
+  lead.addEventListener("change", () => { st.lead = Number(lead.value); renderCard(); });
+
+  const clk = $("fd-clock");
+  D.quarter_clocks.forEach((c) => { html("option", "", clock(c), clk).value = String(c); });
+  clk.value = String(st.clock);
+  clk.addEventListener("change", () => { st.clock = Number(clk.value); renderCard(); });
+
+  $("fd-strength").addEventListener("change", (e) => { st.strength = Number(e.target.value); renderCard(); });
+  $("fd-maxfg").addEventListener("change", (e) => { st.maxFg = Number(e.target.value); renderCard(); });
+
+  [["q", Number], ["rates", (v) => v], ["show", (v) => v]].forEach(([key, cast]) => {
+    document.querySelectorAll(`#fd-card [data-${key}]`).forEach((b) => b.addEventListener("click", () => {
+      st[key] = cast(b.dataset[key]);
+      setPressed(`#fd-card [data-${key}]`, key, b.dataset[key]);
+      renderCard();
+    }));
+  });
+}
+
+/* ---------- rate charts: bars = what happened, line = the fit ---------- */
+function rateChart(svgId, cardId, tipId, rows, xLabel, fitAt, rowLabel) {
+  const svg = $(svgId);
+  clear(svg);
+  const W = 420, H = 280, ml = 42, mr = 10, mt = 12, mb = 44;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const n = rows.length, bw = (W - ml - mr) / n;
+  const y = (v) => mt + (1 - v) * (H - mt - mb);
+  [0, 0.25, 0.5, 0.75, 1].forEach((g) => {
+    svgEl("line", { x1: ml, x2: W - mr, y1: y(g), y2: y(g), stroke: css("--grid"), "stroke-width": 1 }, svg);
+    text(svg, ml - 6, y(g) + 4, `${g * 100}%`, "tick", "end");
+  });
+  rows.forEach((r, i) => {
+    const x0 = ml + i * bw + bw * 0.18, w = bw * 0.64, top = y(r.actual), rad = Math.min(4, w / 2);
+    const d = `M${x0},${y(0)} V${top + rad} Q${x0},${top} ${x0 + rad},${top} H${x0 + w - rad} Q${x0 + w},${top} ${x0 + w},${top + rad} V${y(0)} Z`;
+    const bar = svgEl("path", { d, fill: css("--s1") }, svg);
+    text(svg, ml + i * bw + bw / 2, H - mb + 16, rowLabel(r, i), "tick", "middle");
+    const hit = svgEl("rect", { x: ml + i * bw, y: mt, width: bw, height: y(0) - mt, fill: "transparent" }, svg);
+    hit.addEventListener("pointermove", (evt) => {
+      showTip(tipId, $(cardId), evt, [
+        [`${xLabel}: ${rowLabel(r, i)}`, "sub"],
+        [`${Math.round(r.actual * 100)}% happened`, "big"],
+        [`${Math.round(r.fitted * 100)}% on the smooth fit \u00b7 ${r.n.toLocaleString()} plays`, "sub"]
+      ]);
+      bar.setAttribute("opacity", "0.82");
+    });
+    hit.addEventListener("pointerleave", () => { hideTip(tipId); bar.removeAttribute("opacity"); });
+  });
+  const pts = rows.map((r, i) => `${ml + i * bw + bw / 2},${y(fitAt(r, i))}`);
+  svgEl("path", { d: `M${pts.join(" L")}`, fill: "none", stroke: css("--ink"), "stroke-width": 2,
+    "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+  text(svg, ml + (W - ml - mr) / 2, H - 8, xLabel.toUpperCase(), "axis-title", "middle");
+}
+
+function renderRates() {
+  rateChart("conv", "cv-card", "cv-tip", C.by_distance, "Yards to go", (r) => r.fitted,
+    (r) => (r.distance === 15 ? "15+" : String(r.distance)));
+  rateChart("fgm", "fg-card", "fg-tip", G.by_distance, "Kick distance", (r) => r.fitted,
+    (r) => r.range.replace(/[(\]]/g, "").replace(", ", "\u2013"));
+}
+
+/* ---------- boot ---------- */
+function renderAll() { renderCard(); renderRates(); }
+bindCard();
+renderAll();
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+new MutationObserver(renderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>
+
+</body>
+</html>
