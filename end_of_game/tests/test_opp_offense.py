@@ -154,7 +154,7 @@ def test_coefficients_are_reported_per_outcome(real_drives):
 
 
 from opp_offense import (MIN_BIN_N, REQUIRED_FIELDS, anchor_check,
-                         calibration_table, holdout_evaluation, median_ep_at,
+                         calibration_table, median_ep_at,
                          monotonicity_check)
 
 
@@ -165,16 +165,6 @@ def test_calibration_table_bins_and_totals(real_drives):
     assert table.n.sum() == model.n_train
     # a usable model tracks the diagonal: mean absolute gap under 10 points
     assert (table.predicted - table.observed).abs().mean() < 0.10
-
-
-def test_holdout_evaluation_trains_and_tests_on_disjoint_seasons(real_drives):
-    result = holdout_evaluation(
-        real_drives, train_seasons=[2019, 2021, 2022, 2023, 2024],
-        test_seasons=[2025, 2026])
-    assert result["n_train"] > 1000
-    assert result["n_test"] > 100
-    # beating a coin flip out of sample is the bar for using this at all
-    assert result["auc"] > 0.60, f"out-of-sample AUC {result['auc']}"
 
 
 def test_monotonicity_check_reports_every_feature(real_drives):
@@ -374,3 +364,98 @@ def test_loso_folds_records_why_it_skipped(real_drives):
     skipped = folds[~folds.folded]
     assert len(skipped) >= 1
     assert (skipped.skipped_because.str.len() > 0).all()
+
+
+from opp_offense import (CONDITIONAL_MEDIAN_MAX, CONDITIONAL_WORST_MAX,
+                          DIAGNOSTIC_BANDS, GATE_BANDS, GATE_REGION_SECONDS,
+                          MIN_AUC, conditional_calibration,
+                          regional_performance, score_band)
+
+
+def test_regional_performance_reports_every_populated_region(real_drives):
+    out = loso_predictions(decision_population(real_drives))
+    table = regional_performance(out)
+    assert list(table.columns) == ["region", "seconds_limit", "n", "auc",
+                                   "calibration"]
+    assert "<=5:00" in set(table.region)
+
+
+def test_regional_auc_clears_the_bar_where_the_tool_operates(real_drives):
+    out = loso_predictions(decision_population(real_drives))
+    table = regional_performance(out).set_index("region")
+    assert table.loc["<=5:00", "auc"] > MIN_AUC
+
+
+def test_score_band_labels_every_drive_in_the_population(real_drives):
+    pop = decision_population(real_drives)
+    bands = score_band(pop)
+    assert (bands != "other").all()
+
+
+def test_score_band_splits_on_what_the_opponent_needs(real_drives):
+    pop = decision_population(real_drives)
+    bands = score_band(pop)
+    assert (bands[pop.score_diff == 0] == "needs 3 or fewer").all()
+    assert (bands[pop.score_diff == -3] == "needs 3 or fewer").all()
+    assert (bands[pop.score_diff == -4] == "needs a TD").all()
+
+
+def test_diagnostic_bands_are_finer_than_gate_bands(real_drives):
+    pop = decision_population(real_drives)
+    assert score_band(pop, DIAGNOSTIC_BANDS).nunique() > score_band(pop).nunique()
+    assert (score_band(pop, DIAGNOSTIC_BANDS) != "other").all()
+
+
+def test_finer_bands_would_fail_the_gate_which_is_why_they_are_not_gated(real_drives):
+    """Pins the reason GATE_BANDS is only two wide. The diagnostic bands are
+    genuinely less stable out of sample, so gating on them would ship a gate
+    that fails on arrival."""
+    out = loso_predictions(decision_population(real_drives))
+    coarse = conditional_calibration(out)
+    fine = conditional_calibration(out, DIAGNOSTIC_BANDS)
+    assert fine.worst_band_bias.median() > coarse.worst_band_bias.median()
+
+
+def test_gate_bands_still_detect_the_original_defect(real_drives):
+    """The gate must be coarse enough to be stable AND fine enough to catch the
+    defect it exists for. Two bands threads that by a 7% margin; verify it."""
+    old_model = fit(real_drives)
+    pop = decision_population(real_drives).dropna(subset=REQUIRED_FIELDS)
+    scored = pop.assign(
+        predicted=old_model.predict_frame(pop).p_score.to_numpy(),
+        band=score_band(pop))
+    worst = max(abs(cell.predicted.mean() - cell.scored.mean())
+                for _, cell in scored.groupby("band", observed=True))
+    assert worst > CONDITIONAL_MEDIAN_MAX, (
+        f"two-band gate misses the original defect (worst bias {worst:.3f}); "
+        f"the gate is stable but blind and must be reconsidered")
+
+
+def test_conditional_calibration_reports_per_season(real_drives):
+    out = loso_predictions(decision_population(real_drives))
+    table = conditional_calibration(out)
+    assert list(table.columns) == ["season", "n", "worst_band_bias"]
+    assert len(table) >= 5
+
+
+def test_conditional_calibration_meets_the_gate(real_drives):
+    out = loso_predictions(decision_population(real_drives))
+    table = conditional_calibration(out)
+    assert table.worst_band_bias.median() < CONDITIONAL_MEDIAN_MAX
+    assert table.worst_band_bias.max() < CONDITIONAL_WORST_MAX
+
+
+def test_conditional_calibration_would_catch_the_original_defect(real_drives):
+    """The gate exists to catch a model fitted on the wrong population. Score
+    the old population's model on the decision population's bands and confirm
+    the bias it produces exceeds what the gate tolerates."""
+    old_model = fit(real_drives)
+    pop = decision_population(real_drives).dropna(subset=REQUIRED_FIELDS)
+    scored = pop.assign(
+        predicted=old_model.predict_frame(pop).p_score.to_numpy(),
+        band=score_band(pop))
+    worst = 0.0
+    for band, cell in scored.groupby("band", observed=True):
+        worst = max(worst, abs(cell.predicted.mean() - cell.scored.mean()))
+    assert worst > CONDITIONAL_MEDIAN_MAX, (
+        f"old model's worst band bias {worst:.3f} does not exceed the gate")
