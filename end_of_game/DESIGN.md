@@ -398,9 +398,23 @@ corrected population:
 | own 25, 1:00, needs TD | 60 | 0.217 | **0.13** | **0.34** |
 | own 40, ≥4:00, needs TD | 81 | 0.383 | **0.28** | **0.49** |
 
-The old model predicts 0.10 and 0.31 for these, so **it fails the first floor and
-sits on the edge of the second.** The gate now has teeth in the direction that
-matters.
+**Correction to an earlier draft of this amendment.** It claimed the old model
+"fails the first floor", which was measured with a point prediction at each
+anchor's nominal clock. That design was then rejected: widening a neighbourhood
+to reach the support floor drags its centre away from the scenario (the
+"own 25, ~1:00" band has a median clock of 1:49), so the model was being asked
+about a clock the observed rate did not describe. Anchors now compare the model's
+mean prediction over the neighbourhood's real drives against the interval.
+
+Under that better design **the old model passes every anchor**, and this is a
+limitation worth stating rather than hiding: a Wilson interval at n=60 spans
+about 0.20, so a 15-point population bias fits comfortably inside it. Anchors
+catch gross errors and, being two-sided, can no longer be satisfied by
+understating. They are a backstop, not a proof of calibration.
+
+**Gate 6 is the defence against this class of defect** — the old model's worst
+per-band bias is 0.151 against a 0.10 threshold. An anchor pass is not evidence
+of calibration, and nothing downstream should treat it as such.
 
 The 0.80 ceiling against an observed 0.383 was theatre and is gone.
 
