@@ -253,3 +253,190 @@ of only the sideline, which no quantity of extra seconds reproduces; at 5:00 it 
 worth little because the clock is not the binding constraint. Converting timeouts
 to effective seconds forces the effect to be linear in `log_seconds`. Usable, but
 `endgame_sim.py` must not treat it as settled.
+
+---
+
+# Amendment 2 — the population fix, and gates that can actually fail (2026-09-29)
+
+The whole-branch review found the model **fitted on a population the tool can never
+ask about**, and found that the five gates were structurally unable to see it. This
+amendment is the corrected design. It supersedes the model form and the gate
+definitions above.
+
+## What went wrong, precisely
+
+Fitted on all 1,978 fourth-quarter drives, of which **894 are leading offenses** —
+teams killing clock, the opposite of the behaviour the tool asks about. Conditional
+on opponent score state, the model was badly biased:
+
+| opponent state | n | predicted | observed | bias |
+|---|---|---|---|---|
+| down 1–3 | 127 | 0.251 | 0.402 | **−0.151** |
+| down 4–7 | 172 | 0.328 | 0.424 | −0.096 |
+| tied | 113 | 0.234 | 0.292 | −0.058 |
+| leading | 894 | 0.297 | 0.268 | +0.029 |
+
+Gate 1 read a healthy 0.028 because these errors offset inside
+predicted-probability deciles.
+
+**The lesson, which is the most important thing in this document: aggregate
+calibration is not conditional calibration.** A model can be perfectly calibrated
+on average and badly wrong in every sub-population that matters, because the
+errors cancel. Decile calibration cannot detect this and never could. Every future
+gate on this project is measured conditional on the states the tool actually
+occupies.
+
+The bias also ran in the dangerous direction — understating how likely a trailing
+opponent is to score makes punting look safer than it is, in exactly the
+small-lead situations the packet exists for.
+
+## Population
+
+**Trailing or tied, deficit ≤ 16 points.** n=720; 253 inside 5:00; 122 inside 2:00.
+
+If Brown holds the lead, the opponent is *by construction* trailing or tied. The
+894 leading-offense drives describe behaviour that cannot occur in the use case, so
+excluding them removes inapplicable rows rather than discarding information. The
+16-point cap drops 364 drives at deficits of 17+, whose 0.280 scoring rate reflects
+a decided game.
+
+`pff_GARBAGETIME` was considered as a cleaner cut and rejected: it is a vendor
+judgment we do not control, distributed across both teams, and an explicit deficit
+cap is both interpretable and defensible to a coach.
+
+## Model form — unchanged, and this is a correction to my own proposal
+
+Features stay `["log_seconds", "ep_start", "needs_td"]`.
+
+I proposed replacing `needs_td` with a bucketed score-state feature on the strength
+of in-sample numbers (worst in-sample bias 0.030 against 0.065; holdout AUC 0.694
+against 0.677). **Leave-one-season-out reversed that verdict**, and the bucketed
+spec is the worst of the three out of sample:
+
+| score-state scheme | n | median LOSO band bias | worst |
+|---|---|---|---|
+| 5 bands | 720 | 0.183 | 0.327 |
+| 3 bands | 720 | 0.102 | 0.152 |
+| **2 bands (`needs_td`)** | 720 | **0.072** | **0.116** |
+
+The 2-band scheme *is* `deficit > 3`, the existing feature. **The population was the
+entire defect; the features were right.**
+
+Coarsening, not data volume, is what buys stability: going from 720 to 1,084 drives
+moves 5-band instability from 0.183 to 0.180 — nothing. This is variance from
+parameter count. An FCS export would help modestly (standard error scales with
+1/√n, so roughly 0.13) and would still lose to coarsening. **It is worth having
+eventually and is not a prerequisite.**
+
+## Gates, rebuilt
+
+Two of the original five could not fail, and one rewarded the defect.
+
+### Gate 1 — aggregate calibration (kept)
+Mean |predicted − observed| across deciles < 0.10. Retained, but demoted: it is
+necessary and nowhere near sufficient. It read 0.028 while the model was 15 points
+wrong where it mattered.
+
+### Gate 2 — out-of-sample discrimination, measured where the tool operates (revised)
+The old gate read AUC over all of Q4, which flatters: 0.705 overall but 0.669 inside
+5:00 and 0.630 inside 2:00, with 42.8% of training drives falling outside the card's
+range entirely. AUC > 0.60 must now hold **restricted to ≤5:00**, and the full
+regional profile is printed on every run.
+
+**The estimator changes with it, and this is not optional.** The original
+train-on-2019–2024 / test-on-2025–26 split does not survive the narrowed
+population: the ≤5:00 slice of that holdout is n=56, where AUC reads **0.596** and
+would fail this gate. The same model scored **leave-one-season-out pooled** — train
+on six seasons, predict the seventh, pool every out-of-fold prediction, then score
+once — gives **0.674**. The gap is entirely which seasons happen to land in the test
+fold.
+
+At n=720 a single-season holdout is noise. Gate 2 and gate 6 are therefore both
+measured LOSO-pooled, on the same folds. Current model:
+
+| region | n | LOSO AUC | calibration |
+|---|---|---|---|
+| all | 720 | 0.649 | 0.000 |
+| ≤5:00 | 253 | **0.674** | 0.027 |
+| ≤2:00 | 122 | 0.665 | 0.033 |
+
+Note discrimination is now *better* inside 5:00 than overall — the reverse of the
+old model's degradation, and what you would expect once the population is
+behaviourally homogeneous.
+
+### Gate 3 — monotonicity (kept, already strengthened)
+Per-outcome rather than averaged: both `TD − NONE` and `FG − NONE` must be
+non-negative for `log_seconds` and `ep_start`. Checked that this enforces the right
+shape: the apparent scoring peak at 4–6 minutes is not established once confidence
+intervals are drawn (<2:00 0.112–0.249; 2–5 min 0.291–0.457; 5–10 min 0.292–0.438;
+>10 min 0.358–0.469), so monotone-in-time is consistent with the data.
+
+### Gate 4 — anchors, with floors as well as ceilings (revised)
+The old gate was **one-sided — every anchor an upper bound — so a model
+understating opponent scoring passed more easily.** It rewarded the defect. All
+three anchors passed while the model understated all three:
+
+| anchor | n | observed | old model | old gate |
+|---|---|---|---|---|
+| own 25, 1:00, needs TD | 60 | 0.217 | 0.10 | ceiling 0.25 → passed |
+| own 25, 0:20, needs TD | **12** | 0.083 | 0.06 | ceiling 0.10 → passed |
+| own 40, 5:00, needs TD | 25 | 0.480 | 0.31 | ceiling 0.80 → passed |
+
+Anchors are now **two-sided, and their bounds are computed from the data at fit
+time rather than hardcoded** — a Wilson 95% interval on the observed rate in the
+anchor's own neighbourhood. Deriving them programmatically keeps them from going
+stale when the population or the seasons change, and removes the judgment the
+original ceilings were criticised for.
+
+An anchor backed by fewer than `MIN_BIN_N` drives is not a test and must be widened
+or dropped. That retires `own 25, 0:20` outright at n=12, whose interval
+[0.015, 0.354] could never discriminate anything. The surviving two, on the
+corrected population:
+
+| anchor | n | observed | floor | ceiling |
+|---|---|---|---|---|
+| own 25, 1:00, needs TD | 60 | 0.217 | **0.13** | **0.34** |
+| own 40, ≥4:00, needs TD | 81 | 0.383 | **0.28** | **0.49** |
+
+The old model predicts 0.10 and 0.31 for these, so **it fails the first floor and
+sits on the edge of the second.** The gate now has teeth in the direction that
+matters.
+
+The 0.80 ceiling against an observed 0.383 was theatre and is gone.
+
+### Gate 5 — card-cell support (rewritten; the old one could not fail)
+The old gate compared `pd.qcut` decile sizes against a floor of 30. Deciles are
+equal-count by construction — bin sizes were [198, 198, 198, 197, …] — so it could
+not fail below a total n of 300, and it checked the wrong object. This document
+always asked for the count behind **every cell the card prints**, with refusal to
+print thin ones.
+
+Now enforced where it belongs: the CLI grid requests expected points at each cell's
+own clock and prints `--` wherever fewer than `MIN_BIN_N` comparable drives support
+it. On the Ivy data this refuses the entire red-zone column, which rested on 6–7
+drives and previously printed confident numbers.
+
+### Gate 6 — out-of-sample conditional calibration (NEW; the gate that would have caught this)
+Leave-one-season-out, bias computed within each score-state band:
+**median across seasons < 0.10 and worst season < 0.20.** Current model on the
+corrected population: 0.072 and 0.116.
+
+**Measured out of sample, and that is not a detail.** In-sample conditional
+calibration on a bucketed model reads 0.0298 and is near-unfailable for exactly the
+reason old gate 5 was unfailable: the dummies fit the band means by construction. A
+gate that cannot fail is not a gate.
+
+The two-part form separates one unlucky season from a systematically miscalibrated
+model, which is the distinction that matters at n=720.
+
+## What must be surfaced on the card
+
+Worst-case band bias of ~0.12 is real and does not go away. The printed packet must
+carry that uncertainty rather than implying point-estimate precision, and any cell
+the data cannot support prints nothing at all.
+
+## Not fixed by this amendment
+
+Routing the opponent's timeouts through the clock (Amendment 1a) remains an
+approximation whose error is non-linear in time remaining. `endgame_sim.py` must not
+treat it as settled.
