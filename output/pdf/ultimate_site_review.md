@@ -1,0 +1,18 @@
+# Ultimate review for the end-of-game report
+
+Reviewed 6 October 2026 in the signed-in Brown account at ultimate.pff.com. This is a review of the site's section structure and the workflows relevant to this report, not an audit of every report calculation or every game in the database.
+
+| Section | What was reviewed | Use in this project |
+| --- | --- | --- |
+| Base Reports | Primary, General, Offensive, Defensive and Special Teams catalogs; game report and its offense, defense, passing, rushing, receiving, protection, coverage and kicking report links | Locate games and link report counts to underlying plays. Relevant reports include Play Clock, Offensive/Defensive Drives, Run/Pass by Situation, Fourth Down Decisions, Quick Cuts and Cutups Generator. |
+| Collection | Saved playlists, shared reports, custom reports and favorites; playlist creation, selection and detail view | Save small film sequences. A saved playlist has a dedicated /playlist/ address. Clicking a collection card applies it as a filter; it does not open its dedicated address. Use Go to Playlist. |
+| IQ | Player evaluation, projections, position value, comparisons, depth charts and portal catalog; game-management catalog; Late Half/Game Management and In-Game Decision Maker interfaces | The late-half chart states that it assumes no stoppages and opponent use of available timeouts. The decision maker accepts league, season, teams, scores, timeouts, possession, quarter, time, down, distance and yards to goal. Neither screen establishes the causal effect of a timeout. |
+| Feeds | General, Fantasy, Stats, Video and IQ feed catalogs | Video feeds include plays, offense, defense, special teams, roster and ODK. Data feeds provide the bridge from report analysis to identifiable film snaps. No bulk feed was exported during this review. |
+| Translations | Home, My Translations, Directory and Exports | Maps team terminology for formations, backsets, motions and fronts. The current My Translations view showed no columns/translations. Exports are per play at game level. Not needed for clock evidence. |
+| Filters | Games/league/season/weeks/team/location/weather; Plays groups; Situation controls and exact-play search | Clock-relevant fields include quarter, clock range, down, distance, field position, play clock, running clock, score differential, two-/four-minute tags, both timeout counts and Play Before/Current/After. Searching for Play ID yielded no matching filter. |
+| Video | Quick Video, Play Diagrams and In-Game Decision Maker tabs; play grid, selected-play controls, playback and save workflow | Grid labels expose PFF play ID, season/week, teams/scores, quarter, snap clock, down/distance and field position. Save or Share creates a named playlist from selected plays. |
+| Help | Help menu and its status, filter-list, grading, standard video-column and NCAA availability links | Useful for field definitions and missing-film questions. Help links were inventoried; their full external knowledge base was not audited. |
+
+The saved film references were created without adding shared users. They require an authenticated account with access to the playlist and underlying film. No messages were sent. The game-report fallback and play IDs remain useful if a reader's account cannot open a private playlist.
+
+The audit clock is **snap clock minus an assumed seven seconds**, not an observed whistle time. The earlier report queue incorrectly described it as the previous-snap clock. Film references use the actual PFF snap clock. Estimated waits remain audit estimates until checked against continuous clock footage. A cut clip can omit the dead-ball interval; it verifies the plays, but may not establish every second between them.

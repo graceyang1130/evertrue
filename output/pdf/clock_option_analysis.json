@@ -1,0 +1,251 @@
+{
+  "sample": {
+    "seasons": [
+      2023,
+      2024,
+      2025,
+      2026
+    ],
+    "games": 5578
+  },
+  "clock_kill": {
+    "FCS": {
+      "four_minute_run": {
+        "n": 2287,
+        "live": {
+          "n": 2287,
+          "mean": 7.4,
+          "median": 8.0,
+          "p25": 6.0,
+          "p75": 9.0
+        },
+        "wait": {
+          "n": 2287,
+          "mean": 33.0,
+          "median": 35.0,
+          "p25": 31.0,
+          "p75": 37.0
+        },
+        "modeled_total_mean": 40.4
+      },
+      "kneel": {
+        "n": 551,
+        "live": {
+          "n": 551,
+          "mean": 4.4,
+          "median": 4.0,
+          "p25": 3.0,
+          "p75": 5.0
+        },
+        "wait": {
+          "n": 551,
+          "mean": 30.9,
+          "median": 34.0,
+          "p25": 25.0,
+          "p75": 37.0
+        },
+        "modeled_total_mean": 35.3
+      }
+    },
+    "Ivy": {
+      "four_minute_run": {
+        "n": 188,
+        "live": {
+          "n": 188,
+          "mean": 7.6,
+          "median": 8.0,
+          "p25": 6.0,
+          "p75": 10.0
+        },
+        "wait": {
+          "n": 188,
+          "mean": 33.5,
+          "median": 36.0,
+          "p25": 32.0,
+          "p75": 37.0
+        },
+        "modeled_total_mean": 41.1
+      },
+      "kneel": {
+        "n": 33,
+        "live": {
+          "n": 33,
+          "mean": 4.7,
+          "median": 5.0,
+          "p25": 3.0,
+          "p75": 6.0
+        },
+        "wait": {
+          "n": 33,
+          "mean": 29.6,
+          "median": 30.0,
+          "p25": 24.0,
+          "p75": 37.0
+        },
+        "modeled_total_mean": 34.3
+      }
+    },
+    "Brown": {
+      "four_minute_run": {
+        "n": 7,
+        "live": {
+          "n": 7,
+          "mean": 7.0,
+          "median": 8.0,
+          "p25": 7.0,
+          "p75": 8.5
+        },
+        "wait": {
+          "n": 7,
+          "mean": 30.6,
+          "median": 34.0,
+          "p25": 26.5,
+          "p75": 36.0
+        },
+        "modeled_total_mean": 37.6
+      },
+      "kneel": {
+        "n": 3,
+        "live": {
+          "n": 3,
+          "mean": 4.7,
+          "median": 4.0,
+          "p25": 3.0,
+          "p75": 6.0
+        },
+        "wait": {
+          "n": 3,
+          "mean": 21.0,
+          "median": 19.0,
+          "p25": 16.5,
+          "p75": 24.5
+        },
+        "modeled_total_mean": 25.7
+      }
+    }
+  },
+  "timeout_vs_spike": {
+    "FCS": {
+      "all": {
+        "n": 269,
+        "mean": 6.2,
+        "median": 5.7,
+        "p25": 3.7,
+        "p75": 7.7
+      },
+      "after_first_down": {
+        "n": 229,
+        "mean": 5.2,
+        "median": 4.7,
+        "p25": 3.7,
+        "p75": 6.7
+      },
+      "after_play_short_of_first_down": {
+        "n": 40,
+        "mean": 12.2,
+        "median": 12.2,
+        "p25": 10.7,
+        "p75": 13.7
+      },
+      "live_estimate_by_call": {
+        "R": {
+          "n": 2624,
+          "mean": 6.9,
+          "median": 7.0,
+          "p25": 6.0,
+          "p75": 9.0
+        },
+        "P": {
+          "n": 2829,
+          "mean": 4.3,
+          "median": 4.0,
+          "p25": 0.0,
+          "p75": 8.0
+        }
+      }
+    },
+    "Ivy": {
+      "all": {
+        "n": 21,
+        "mean": 4.5,
+        "median": 3.6,
+        "p25": 2.6,
+        "p75": 5.6
+      },
+      "after_first_down": {
+        "n": 19,
+        "mean": 3.8,
+        "median": 3.6,
+        "p25": 2.6,
+        "p75": 5.1
+      },
+      "after_play_short_of_first_down": {
+        "n": 2,
+        "mean": 11.6,
+        "median": 11.6,
+        "p25": 11.6,
+        "p75": 11.6
+      },
+      "live_estimate_by_call": {
+        "R": {
+          "n": 126,
+          "mean": 7.4,
+          "median": 8.0,
+          "p25": 6.0,
+          "p75": 9.0
+        },
+        "P": {
+          "n": 194,
+          "mean": 5.4,
+          "median": 7.0,
+          "p25": 0.0,
+          "p75": 9.0
+        }
+      }
+    },
+    "Brown": {
+      "all": {
+        "n": 2,
+        "mean": 4.3,
+        "median": 4.3,
+        "p25": 3.8,
+        "p75": 4.8
+      },
+      "after_first_down": {
+        "n": 2,
+        "mean": 4.3,
+        "median": 4.3,
+        "p25": 3.8,
+        "p75": 4.8
+      },
+      "after_play_short_of_first_down": {
+        "n": 0,
+        "mean": null,
+        "median": null,
+        "p25": null,
+        "p75": null
+      },
+      "live_estimate_by_call": {
+        "R": {
+          "n": 11,
+          "mean": 6.8,
+          "median": 8.0,
+          "p25": 7.0,
+          "p75": 9.0
+        },
+        "P": {
+          "n": 41,
+          "mean": 5.7,
+          "median": 7.0,
+          "p25": 0.0,
+          "p75": 9.0
+        }
+      }
+    }
+  },
+  "notes": [
+    "Clock-kill timing includes only snaps for which the game clock kept running and the next play-clock reading was available.",
+    "Timeout-versus-spike estimates remove the estimated live time of the preceding play because that play occurs under either choice.",
+    "Brown has only two qualifying hurry-and-spike sequences; use the FCS estimate for planning."
+  ]
+}

@@ -1,0 +1,7 @@
+group,play_type,n,live_mean,wait_mean,modeled_total_mean
+FCS,four_minute_run,2287,7.4,33.0,40.4
+FCS,kneel,551,4.4,30.9,35.3
+Ivy,four_minute_run,188,7.6,33.5,41.1
+Ivy,kneel,33,4.7,29.6,34.3
+Brown,four_minute_run,7,7.0,30.6,37.6
+Brown,kneel,3,4.7,21.0,25.7

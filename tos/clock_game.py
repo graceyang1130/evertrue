@@ -31,6 +31,7 @@ Usage:
     python clock_game.py            # prints the summaries
 """
 
+import json
 import os
 import sys
 
@@ -57,6 +58,17 @@ DOWNS = [(1, 10), (2, 2), (2, 5), (2, 8), (2, 12), (3, 1), (3, 3), (3, 5),
 YARDS = list(range(5, 96, 5))               # ball on our 5 ... their 5
 GRID_CLOCK = list(range(30, 901, 30))
 GRID_LEAD = list(range(-16, 9))
+
+
+def fcs_codes_by_season():
+    """Season-specific FCS team codes matched to ESPN's FCS directory."""
+    path = os.path.join(DATA, "fcs_team_codes.json")
+    source = json.load(open(path))
+    base = set(source["base_codes"])
+    return {
+        int(season): (base | set(change["add"])) - set(change["remove"])
+        for season, change in source["season_adjustments"].items()
+    }
 
 
 def load():
@@ -238,9 +250,12 @@ def defense_reality(iv, kill_cycle, drive, punt):
     Only spots where time is tight count: if the offense ran the clock on every
     snap left before its punt (kill_cycle seconds each), the defense would get
     the ball back (see ball_back) with less time than time_needed() says its
-    drive needs, the same test the recommendation card uses. A no-timeout interval under 15
-    seconds means the clock stopped on its own (a push out of bounds PFF did
-    not flag), so it is not a missed chance.
+    drive needs, the same test the recommendation card uses. Beginning in 2024,
+    any otherwise flagged sequence expected to cross 2:00 before the punt is
+    set aside because the automatic timeout changes the number and placement
+    of useful charged timeouts. A no-timeout interval under 15 seconds means
+    the clock stopped on its own (a push out of bounds PFF did not flag), so it
+    is not a missed chance.
     """
     late_q4 = (iv.pff_QUARTER == 4) & (iv.clock <= LATE)
     trailing_d = iv.score_diff.between(1, 16)          # offense leads by 1-16
@@ -264,19 +279,42 @@ def defense_reality(iv, kill_cycle, drive, punt):
     need = time_needed(drive, lead_after, ytg_after)
     spots = spots[time_back < need]
 
-    spots["rule_call"] = spots.def_to >= 5 - spots.next_down
+    # The 2024 rule stops a running dead-ball clock at exactly 2:00. If the
+    # ball is live then, the stop comes when that play ends. We conservatively
+    # hold out the whole decision whenever the average no-timeout path starts
+    # above 2:00 and reaches it before the expected punt. Those rows require a
+    # separate optimization with one free stop; they are not labeled misses.
+    spots["two_minute_affected"] = (
+        (spots.pff_GAMESEASON >= 2024)
+        & (spots.clock > 120)
+        & (time_back <= 120)
+    )
+    spots["two_minute_direct"] = (
+        (spots.pff_GAMESEASON >= 2024)
+        & (spots.clock > 120)
+        & (spots.next_clock <= 120)
+        & ~spots.called
+    )
+    spots["rule_call_raw"] = spots.def_to >= 5 - spots.next_down
+    spots["rule_call"] = spots.rule_call_raw & ~spots.two_minute_affected
     spots["lost"] = (spots.elapsed - LIVE_BALL).clip(lower=0)
 
     def summary(frame):
+        raw_should = frame[frame.rule_call_raw]
         should = frame[frame.rule_call]
         wait = frame[~frame.rule_call]
         missed = should[~should.called]
         made = should[should.called]
         return {
             "snaps": int(len(frame)),
+            "raw_should_call": int(len(raw_should)),
+            "two_minute_excluded": int(raw_should.two_minute_affected.sum()),
+            "direct_two_minute_stops": int(raw_should.two_minute_direct.sum()),
             "should_call": int(len(should)),
             "called_when_should": round(float(should.called.mean()), 3) if len(should) else None,
             "seconds_lost_when_missed": round(float(missed.lost.mean()), 1) if len(missed) else None,
+            "seconds_lost_total": round(float(missed.lost.sum()), 1),
+            "missed_with_three_timeouts": int((missed.def_to == 3).sum()),
             "delay_when_called": round(float(made.lost.median()), 1) if len(made) else None,
             "called_when_could_wait": round(float(wait.called.mean()), 3) if len(wait) else None,
             "seconds_lost_per_game": round(float(missed.lost.sum() / frame.pff_GAMEID.nunique()), 1)
@@ -292,10 +330,32 @@ def defense_reality(iv, kill_cycle, drive, punt):
         "lost": round(float(r.lost)),
     } for r in missed.itertuples()]
 
+    brown_two_minute = brown[brown.rule_call_raw & brown.two_minute_affected].sort_values(
+        ["pff_GAMESEASON", "pff_WEEK", "pff_GAMEID", "clock"]
+    )
+    brown_two_minute = [{
+        "season": int(r.pff_GAMESEASON), "opponent": r.pff_OFFTEAM,
+        "snap_clock": int(r.clock), "next_snap_clock": int(r.next_clock),
+        "next_down": int(r.next_down), "timeouts": int(r.def_to),
+        "called": bool(r.called), "lost": round(float(r.lost)),
+    } for r in brown_two_minute.itertuples()]
+
+    fcs = fcs_codes_by_season()
+    fcs_defense = pd.Series([
+        team in fcs.get(int(season), set())
+        for team, season in zip(spots.pff_DEFTEAM, spots.pff_GAMESEASON)
+    ], index=spots.index)
+
     return {"all": summary(spots),
+            "fcs": summary(spots[fcs_defense]),
             "ivy": summary(spots[spots.pff_DEFTEAM.isin(IVY)]),
             "brown": summary(brown),
-            "brown_missed": brown_missed}
+            "brown_missed": brown_missed,
+            "brown_two_minute_excluded": brown_two_minute,
+            "two_minute_assumption": (
+                "For 2024 onward, set aside any raw flag that starts above 2:00 "
+                "and whose average no-timeout path reaches 2:00 before the expected punt."
+            )}
 
 
 # --------------------------------------------------------------------------
