@@ -1,0 +1,5 @@
+population,cohort,n,used_p50_seconds,used_p75_seconds,used_p90_seconds
+All offenses,No start cutoff,1053,151.0,243.0,334.0
+All offenses,Prior final 4:00,354,84.0,123.0,170.0
+FCS offenses,No start cutoff,424,167.0,246.0,334.0
+FCS offenses,Prior final 4:00,132,85.0,132.0,183.0

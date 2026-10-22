@@ -1,0 +1,5 @@
+population,n,median_start_seconds,used_p25_seconds,used_p50_seconds,used_p75_seconds,used_p90_seconds
+All offenses,354,115.0,49.0,84.0,123.0,170.0
+FCS offenses,132,116.0,50.0,85.0,132.0,183.0
+All: TD finish,212,122.0,48.0,76.0,111.0,150.0
+All: FG finish,142,106.0,51.0,98.0,133.0,189.0
