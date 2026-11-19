@@ -1,0 +1,114 @@
+season,date,opponent,quarter,clock,down,distance,ball_on,play,yards,detail,our_rush,box,front,in_coverage,missed_tackles,pff_play_id
+2025,2025-09-20,Georgetown,1,11:46,1st,10,their 16,Run,11,Draw · RG,,6.0,Under,,,6461551
+2025,2025-09-20,Georgetown,1,10:45,2nd,12,their 25,Run,10,Power · LE,,7.0,Even,,,6461572
+2025,2025-09-20,Georgetown,3,13:57,3rd,9,their 26,Pass,33,thrown 33 yds M,3-man rush,6.0,Even,#27,,6464643
+2025,2025-09-20,Georgetown,3,07:43,3rd,9,their 36,Pass,43,thrown 19 yds M,4-man rush,6.0,Odd,#51,#27,6465139
+2025,2025-09-27,Harvard,1,12:40,2nd,6,their 27,Pass,23,thrown 2 yds M,4-man rush,6.0,Even,#10,,6522471
+2025,2025-09-27,Harvard,1,08:20,3rd,11,our 21,Pass,21,thrown 28 yds L,4-man rush + stunt,6.0,Odd,#13,,6523001
+2025,2025-09-27,Harvard,1,05:01,1st,10,their 20,Pass,22,thrown 17 yds M,4-man rush,6.0,Even,#10,,6523592
+2025,2025-09-27,Harvard,1,03:08,2nd,9,our 36,Run,11,Power · JET SWEEP LEFT,,6.0,Odd,,,6523757
+2025,2025-09-27,Harvard,1,01:15,3rd,2,our 17,Run,12,Power · LE,,7.0,Even,,,6523834
+2025,2025-09-27,Harvard,2,09:49,3rd,3,their 33,Pass,23,thrown 6 yds M,4-man rush,6.0,Even,#12,#12,6524590
+2025,2025-09-27,Harvard,2,02:00,1st,10,our 44,Pass,44,thrown 41 yds L,4-man rush,7.0,Even,#25,,6525501
+2025,2025-09-27,Harvard,2,00:20,1st,10,our 49,Pass,24,thrown 12 yds M,4-man rush,6.0,Even,#25,#25,6525774
+2025,2025-09-27,Harvard,3,12:57,1st,10,our 42,Pass,35,thrown 30 yds M,4-man rush,6.0,Even,#25,,6526962
+2025,2025-09-27,Harvard,4,11:43,1st,10,their 25,Pass,27,thrown 26 yds R,4-man rush,7.0,Even,#12,,6528607
+2025,2025-09-27,Harvard,4,08:59,1st,10,our 36,Run,10,Inside zone · MR,,7.0,Under,,,6528747
+2025,2025-10-03,Rhode Island,1,02:12,1st,10,their 25,Run,12,Counter · LE,,7.0,Even,,#25,6548089
+2025,2025-10-03,Rhode Island,2,11:24,3rd,2,our 47,Run,11,Inside zone · RE,,7.0,Odd,,,6548249
+2025,2025-10-03,Rhode Island,2,09:30,3rd,4,our 30,Pass,30,thrown 30 yds R,Sim pressure,6.0,Even,#13,,6548282
+2025,2025-10-03,Rhode Island,3,11:59,2nd,13,our 33,Pass,33,thrown 25 yds M,4-man rush,7.0,Even,#25,,6548788
+2025,2025-10-03,Rhode Island,3,04:31,1st,10,their 27,Run,13,Trick · JET SWEEP RIGHT,,8.0,Even,,,6548914
+2025,2025-10-03,Rhode Island,3,03:32,1st,10,our 46,Run,13,Pull lead · RE,,7.0,Even,,#20,6548924
+2025,2025-10-03,Rhode Island,4,11:15,3rd,15,their 15,Pass,21,thrown 19 yds M,4-man rush + stunt,6.0,Even,#58,,6549106
+2025,2025-10-03,Rhode Island,4,05:37,1st,10,our 25,Pass,22,thrown 22 yds L,5-man blitz,6.0,Even,#23,,6549279
+2025,2025-10-10,Bryant,1,11:19,1st,10,their 5,Run,11,Power · LT,,6.0,Over,,,6591276
+2025,2025-10-10,Bryant,1,10:41,1st,10,their 16,Run,12,Outside zone · LE,,7.0,Over,,,6591281
+2025,2025-10-10,Bryant,1,01:42,2nd,1,our 24,Run,10,Inside zone · RG,,6.0,Odd,,,6591379
+2025,2025-10-10,Bryant,1,01:09,1st,10,our 14,Run,14,Inside zone · MR,,7.0,Odd,,"#25, #98",6591380
+2025,2025-10-10,Bryant,2,07:49,1st,10,their 19,Run,11,Power · RE,,6.0,Over,,,6591514
+2025,2025-10-10,Bryant,2,07:17,1st,10,their 30,Run,13,Outside zone · RE,,6.0,Even,,,6591601
+2025,2025-10-10,Bryant,2,06:03,2nd,7,their 46,Pass,25,thrown 14 yds M,4-man rush,6.0,Over,#20,,6591524
+2025,2025-10-10,Bryant,2,04:46,2nd,6,our 25,Run,13,Outside zone · MR,,6.0,Over,,,6591537
+2025,2025-10-10,Bryant,4,13:16,1st,10,their 29,Run,10,Inside zone · ML,,7.0,Odd,,#57,6592001
+2025,2025-10-18,Princeton,1,12:05,1st,10,our 27,Run,13,Power · LG,,7.0,Even,,,6636953
+2025,2025-10-18,Princeton,2,10:54,2nd,6,their 29,Pass,20,thrown 20 yds L,4-man rush,7.0,Even,#20,,6638085
+2025,2025-10-18,Princeton,2,10:32,1st,10,their 49,Run,12,Counter · LG,,7.0,Even,,#30,6638186
+2025,2025-10-18,Princeton,2,06:35,3rd,6,our 20,Pass,20,thrown 21 yds M,5-man blitz,7.0,Even,#27,,6638528
+2025,2025-10-18,Princeton,2,02:00,2nd,6,their 47,Run,10,Man · MR,,6.0,Even,,,6639228
+2025,2025-10-18,Princeton,2,01:42,1st,10,our 43,Pass,28,thrown 18 yds M,4-man rush,6.0,Even,#57,,6639233
+2025,2025-10-18,Princeton,3,03:05,2nd,7,their 30,Pass,20,thrown 0 yds M,5-man blitz,7.0,Odd,#11,#11,6641451
+2025,2025-10-18,Princeton,3,02:07,2nd,6,our 46,Run,34,Inside zone · RT,,6.0,Even,,"#11, #25, #27",6641523
+2025,2025-10-18,Princeton,3,01:28,1st,10,our 12,Run,12,Inside zone · LT,,7.0,Odd,,"#25, #51",6641590
+2025,2025-10-18,Princeton,4,12:32,2nd,5,their 30,Run,11,Inside zone · ML,,8.0,Even,,#57,6642389
+2025,2025-10-18,Princeton,4,11:53,1st,10,their 41,Run,14,Counter · RT,,7.0,Even,,#00,6642402
+2025,2025-10-25,Cornell,1,06:33,2nd,3,our 37,Pass,26,thrown 0 yds M,4-man rush,6.0,Even,#00,#00,6683946
+2025,2025-10-25,Cornell,2,06:17,1st,10,their 37,Pass,23,thrown 23 yds R,4-man rush,6.0,Even,#13,,6686029
+2025,2025-10-25,Cornell,2,04:52,2nd,10,our 24,Run,13,Inside zone · ML,,7.0,Even,,,6686205
+2025,2025-10-25,Cornell,3,08:17,3rd,2,their 47,Run,13,Counter · MR,,7.0,Even,,,6688613
+2025,2025-10-25,Cornell,4,14:10,2nd,8,their 26,Pass,36,thrown 23 yds R,4-man rush,7.0,Even,#13,,6690394
+2025,2025-10-25,Cornell,4,04:44,3rd,10,their 44,Pass,31,thrown 21 yds M,4-man rush,4.0,Even,#00,,6692841
+2025,2025-10-25,Cornell,4,01:30,1st,10,their 41,Pass,21,thrown 16 yds R,4-man rush,5.0,One Interior,#00,,6693912
+2025,2025-10-25,Cornell,5,14:20,3rd,13,our 28,Pass,26,thrown 18 yds M,4-man rush,5.0,Even,#30,,6694852
+2025,2025-10-31,Penn,1,10:11,3rd,1,our 35,Run,13,Man · RE,,7.0,Even,,#58,6721249
+2025,2025-10-31,Penn,2,15:00,1st,10,our 30,Scramble,21,QB scramble,4-man rush,6.0,Even,,,6721354
+2025,2025-10-31,Penn,2,08:28,1st,10,our 33,Pass,24,thrown 19 yds R,4-man rush,6.0,Under,#07,,6721449
+2025,2025-10-31,Penn,2,00:47,1st,10,their 13,Pass,32,thrown -2 yds M,4-man rush,6.0,Even,#00,,6721619
+2025,2025-10-31,Penn,3,15:00,1st,10,their 25,Run,17,Counter · LE,,6.0,Even,,,6721750
+2025,2025-10-31,Penn,3,14:02,2nd,8,their 44,Pass,20,thrown 20 yds L,4-man rush,7.0,Even,#20,,6721758
+2025,2025-10-31,Penn,3,05:43,3rd,6,our 41,Run,40,Inside zone · RG,,7.0,Under,,#20,6721889
+2025,2025-10-31,Penn,4,02:00,2nd,4,our 41,Run,10,Man · LG,,7.0,Even,,,6722239
+2025,2025-10-31,Penn,4,00:49,3rd,6,our 15,Run,14,Man · LE,,9.0,Even,,,6722286
+2025,2025-11-08,Yale,1,14:52,1st,10,their 38,Run,62,Inside zone · LG,,6.0,Even,,#13,6763470
+2025,2025-11-08,Yale,1,06:25,2nd,10,their 30,Pass,22,thrown 19 yds M,4-man rush + stunt,6.0,Over,#57,,6764140
+2025,2025-11-08,Yale,1,03:24,3rd,9,our 36,Run,16,Inside zone · MR,,5.0,Odd,,,6764211
+2025,2025-11-08,Yale,2,05:19,2nd,6,our 21,Pass,21,thrown 13 yds M,4-man rush,6.0,Even,#51,#25,6765372
+2025,2025-11-08,Yale,3,04:41,1st,10,their 47,Pass,34,thrown 34 yds R,4-man rush,7.0,Even,#23,,6768711
+2025,2025-11-08,Yale,3,03:45,2nd,7,our 16,Run,15,Inside zone · LG,,7.0,Over,,,6768928
+2025,2025-11-08,Yale,4,14:45,2nd,15,their 20,Run,40,Inside zone · RG,,6.0,Even,,#07,6769864
+2025,2025-11-08,Yale,4,07:06,1st,10,their 25,Run,10,Outside zone · RG,,7.0,Even,,,6771263
+2025,2025-11-15,Columbia,1,01:38,1st,10,their 43,Run,12,Inside zone · LT,,7.0,Odd,,,6806463
+2025,2025-11-15,Columbia,2,04:11,1st,10,our 24,Pass,24,thrown 26 yds M,4-man rush + stunt,6.0,Even,#07,,6807491
+2025,2025-11-15,Columbia,3,13:41,2nd,6,their 39,Run,12,Outside zone · ML,,7.0,Under,,"#51, #58",6809773
+2025,2025-11-15,Columbia,3,02:17,2nd,8,their 27,Run,11,Inside zone · RG,,8.0,Even,,#58,6811039
+2025,2025-11-15,Columbia,3,00:48,1st,10,our 49,Pass,44,thrown 43 yds M,4-man rush,7.0,Even,#25,,6813879
+2025,2025-11-22,Dartmouth,1,14:50,1st,10,our 39,Run,11,Inside zone · LE,,6.0,Even,,,6849753
+2025,2025-11-22,Dartmouth,1,14:18,1st,10,our 28,Run,10,Outside zone · MR,,6.0,Even,,#20,6849767
+2025,2025-11-22,Dartmouth,1,02:41,3rd,10,their 31,Run,12,Draw · RG,,6.0,Odd,,"#13, #20, #93",6850656
+2025,2025-11-22,Dartmouth,2,07:50,3rd,3,their 32,Pass,31,thrown 6 yds M,4-man rush,7.0,Over,#57,#07,6851086
+2025,2025-11-22,Dartmouth,2,05:47,4th,8,our 35,Pass,35,thrown 31 yds L,4-man rush + stunt,6.0,Even,#00,,6851354
+2025,2025-11-22,Dartmouth,2,00:18,3rd,10,our 20,Pass,20,thrown 14 yds M,4-man rush,6.0,Under,#13,#13,6852377
+2025,2025-11-22,Dartmouth,4,04:12,2nd,10,their 25,Pass,29,thrown 26 yds R,4-man rush,8.0,Even,#27,,6857167
+2026,2026-09-19,New Haven,1,02:24,2nd,10,their 13,Pass,21,thrown -2 yds R,5-man blitz,6.0,Under,#11,"#05, #12",7141450
+2026,2026-09-25,Harvard,1,07:28,1st,10,our 29,Run,10,Outside zone · LG,,6.0,Even,,,7188419
+2026,2026-09-25,Harvard,4,13:20,1st,10,our 46,Run,21,Power · JET SWEEP RIGHT,,7.0,Even,,#07,7189266
+2026,2026-09-25,Harvard,4,04:11,2nd,8,our 46,Run,12,Trick · REVERSE - RIGHT,,6.0,Odd,,,7189403
+2026,2026-09-25,Harvard,4,01:29,2nd,9,our 38,Run,14,Power · LE,,7.0,Over,,,7189501
+2026,2026-10-03,Rhode Island,2,02:34,1st,10,their 22,Run,18,Trick · REVERSE - RIGHT,,6.0,Even,,,7240368
+2026,2026-10-03,Rhode Island,2,02:11,1st,10,their 40,Pass,23,thrown 15 yds M,4-man rush,6.0,Even,#05,,7240376
+2026,2026-10-03,Rhode Island,3,12:45,1st,10,their 15,Run,11,Outside zone · ML,,6.0,Even,,,7241693
+2026,2026-10-03,Rhode Island,3,09:29,1st,10,our 44,Run,24,Inside zone · RG,,6.0,Even,,#05,7241769
+2026,2026-10-03,Rhode Island,4,12:59,2nd,8,their 20,Pass,68,thrown 15 yds M,4-man rush,6.0,Even,#07,,7243216
+2026,2026-10-03,Rhode Island,4,12:29,1st,10,our 12,Run,12,No video · NO VIDEO,,5.0,Even,,,7243265
+2026,2026-10-03,Rhode Island,4,00:28,2nd,7,our 43,Pass,20,thrown 5 yds R,4-man rush + stunt,5.0,Even,#23,,7244350
+2026,2026-10-10,Bryant,1,06:50,1st,10,their 30,Pass,21,thrown 15 yds R,4-man rush,6.0,Even,#32,,7286068
+2026,2026-10-10,Bryant,2,03:47,1st,10,our 35,Pass,35,thrown 2 yds L,5-man blitz,6.0,Even,#06,,7287513
+2026,2026-10-10,Bryant,2,00:20,1st,10,their 20,Run,20,Man · LT,,6.0,Even,,,7289619
+2026,2026-10-10,Bryant,2,00:03,3rd,6,their 44,Pass,30,thrown 30 yds M,3-man rush,5.0,Odd,#26,,7289641
+2026,2026-10-10,Bryant,3,05:23,2nd,7,their 36,Run,18,Power · LE,,5.0,Even,,,7290334
+2026,2026-10-10,Bryant,3,02:23,3rd,8,our 27,Pass,21,thrown 21 yds M,4-man rush,6.0,Odd,#27,,7290586
+2026,2026-10-10,Bryant,4,08:32,3rd,4,their 24,Pass,22,thrown 12 yds M,4-man rush,6.0,Under,#21,#23,7291719
+2026,2026-10-17,Princeton,1,13:59,3rd,6,their 29,Pass,42,thrown 24 yds L,4-man rush + stunt,6.0,Odd,#23,,7327400
+2026,2026-10-17,Princeton,1,13:27,1st,10,our 29,Pass,29,thrown 15 yds L,4-man rush,7.0,Even,#30,,7327425
+2026,2026-10-17,Princeton,2,00:18,1st,10,our 36,Pass,28,thrown 0 yds M,4-man rush,6.0,Even,#32,#32,7330552
+2026,2026-10-24,Cornell,1,13:36,2nd,10,their 26,Pass,24,thrown 22 yds L,4-man rush + stunt,5.0,Even,#21,,7374318
+2026,2026-10-24,Cornell,1,02:00,2nd,7,their 42,Run,22,Pull lead · RE,,7.0,Odd,,#05,7374754
+2026,2026-10-24,Cornell,1,01:22,2nd,10,our 36,Run,10,Power · RE,,6.0,Even,,,7374768
+2026,2026-10-24,Cornell,1,00:36,1st,10,our 25,Run,10,Inside zone · MR,,5.0,Even,,,7374772
+2026,2026-10-24,Cornell,2,11:41,2nd,4,our 38,Pass,28,thrown 16 yds R,4-man rush + stunt,5.0,Odd,#32,,7375208
+2026,2026-10-24,Cornell,2,09:04,1st,10,our 35,Run,12,Trick · END AROUND - RIGHT,,8.0,Even,,"#10, #27",7375420
+2026,2026-10-24,Cornell,2,07:39,1st,10,our 12,Run,12,Draw · ML,,5.0,Even,,,7375553
+2026,2026-10-24,Cornell,2,06:43,3rd,10,our 34,Pass,24,thrown 7 yds R,Sim pressure,6.0,Even,#07,,7375729
+2026,2026-10-24,Cornell,3,11:39,2nd,5,our 35,Pass,25,thrown 18 yds L,4-man rush,7.0,Even,#23,,7377912
+2026,2026-10-24,Cornell,3,03:40,1st,10,our 48,Pass,36,thrown 18 yds M,4-man rush,5.0,Even,#10,,7379228
+2026,2026-10-24,Cornell,3,02:11,1st,10,their 39,Run,24,Power · JET SWEEP RIGHT,,6.0,Even,,#10,7379518

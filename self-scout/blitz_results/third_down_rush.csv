@@ -1,0 +1,16 @@
+rush,distance,dropbacks,converted,converted_pct
+4-man rush,1-2,6,4,66.7
+4-man rush,3-6,21,12,57.1
+4-man rush,7-10,24,10,41.7
+4-man rush,11+,16,2,12.5
+4-man rush,all,67,28,41.8
+4-man rush + stunt,1-2,2,2,100.0
+4-man rush + stunt,3-6,16,6,37.5
+4-man rush + stunt,7-10,21,4,19.0
+4-man rush + stunt,11+,14,4,28.6
+4-man rush + stunt,all,53,16,30.2
+All blitzes,1-2,4,2,50.0
+All blitzes,3-6,26,13,50.0
+All blitzes,7-10,15,6,40.0
+All blitzes,11+,2,0,0.0
+All blitzes,all,47,21,44.7

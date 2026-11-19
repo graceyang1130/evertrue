@@ -1,0 +1,39 @@
+season,date,opponent,quarter,clock,down,distance,ball_on,play,yards,detail,our_rush,box,front,in_coverage,missed_tackles,pff_play_id
+2026,2026-09-19,New Haven,1,02:24,2nd,10,their 13,Pass,21,thrown -2 yds R,5-man blitz,6,Under,#11,"#05, #12",7141450
+2026,2026-09-25,Harvard,1,07:28,1st,10,our 29,Run,10,Outside zone · LG,,6,Even,,,7188419
+2026,2026-09-25,Harvard,4,13:20,1st,10,our 46,Run,21,Power · JET SWEEP RIGHT,,7,Even,,#07,7189266
+2026,2026-09-25,Harvard,4,04:11,2nd,8,our 46,Run,12,Trick · REVERSE - RIGHT,,6,Odd,,,7189403
+2026,2026-09-25,Harvard,4,01:29,2nd,9,our 38,Run,14,Power · LE,,7,Over,,,7189501
+2026,2026-10-03,Rhode Island,2,02:34,1st,10,their 22,Run,18,Trick · REVERSE - RIGHT,,6,Even,,,7240368
+2026,2026-10-03,Rhode Island,2,02:11,1st,10,their 40,Pass,23,thrown 15 yds M,4-man rush,6,Even,#05,,7240376
+2026,2026-10-03,Rhode Island,3,12:45,1st,10,their 15,Run,11,Outside zone · ML,,6,Even,,,7241693
+2026,2026-10-03,Rhode Island,3,09:29,1st,10,our 44,Run,24,Inside zone · RG,,6,Even,,#05,7241769
+2026,2026-10-03,Rhode Island,4,12:59,2nd,8,their 20,Pass,68,thrown 15 yds M,4-man rush,6,Even,#07,,7243216
+2026,2026-10-03,Rhode Island,4,12:29,1st,10,our 12,Run,12,No video · NO VIDEO,,5,Even,,,7243265
+2026,2026-10-03,Rhode Island,4,00:28,2nd,7,our 43,Pass,20,thrown 5 yds R,4-man rush + stunt,5,Even,#23,,7244350
+2026,2026-10-10,Bryant,1,06:50,1st,10,their 30,Pass,21,thrown 15 yds R,4-man rush,6,Even,#32,,7286068
+2026,2026-10-10,Bryant,2,03:47,1st,10,our 35,Pass,35,thrown 2 yds L,5-man blitz,6,Even,#06,,7287513
+2026,2026-10-10,Bryant,2,00:20,1st,10,their 20,Run,20,Man · LT,,6,Even,,,7289619
+2026,2026-10-10,Bryant,2,00:03,3rd,6,their 44,Pass,30,thrown 30 yds M,3-man rush,5,Odd,#26,,7289641
+2026,2026-10-10,Bryant,3,05:23,2nd,7,their 36,Run,18,Power · LE,,5,Even,,,7290334
+2026,2026-10-10,Bryant,3,02:23,3rd,8,our 27,Pass,21,thrown 21 yds M,4-man rush,6,Odd,#27,,7290586
+2026,2026-10-10,Bryant,4,08:32,3rd,4,their 24,Pass,22,thrown 12 yds M,4-man rush,6,Under,#21,#23,7291719
+2026,2026-10-17,Princeton,1,13:59,3rd,6,their 29,Pass,42,thrown 24 yds L,4-man rush + stunt,6,Odd,#23,,7327400
+2026,2026-10-17,Princeton,1,13:27,1st,10,our 29,Pass,29,thrown 15 yds L,4-man rush,7,Even,#30,,7327425
+2026,2026-10-17,Princeton,2,00:18,1st,10,our 36,Pass,28,thrown 0 yds M,4-man rush,6,Even,#32,#32,7330552
+2026,2026-10-24,Cornell,1,13:36,2nd,10,their 26,Pass,24,thrown 22 yds L,4-man rush + stunt,5,Even,#21,,7374318
+2026,2026-10-24,Cornell,1,02:00,2nd,7,their 42,Run,22,Pull lead · RE,,7,Odd,,#05,7374754
+2026,2026-10-24,Cornell,1,01:22,2nd,10,our 36,Run,10,Power · RE,,6,Even,,,7374768
+2026,2026-10-24,Cornell,1,00:36,1st,10,our 25,Run,10,Inside zone · MR,,5,Even,,,7374772
+2026,2026-10-24,Cornell,2,11:41,2nd,4,our 38,Pass,28,thrown 16 yds R,4-man rush + stunt,5,Odd,#32,,7375208
+2026,2026-10-24,Cornell,2,09:04,1st,10,our 35,Run,12,Trick · END AROUND - RIGHT,,8,Even,,"#10, #27",7375420
+2026,2026-10-24,Cornell,2,07:39,1st,10,our 12,Run,12,Draw · ML,,5,Even,,,7375553
+2026,2026-10-24,Cornell,2,06:43,3rd,10,our 34,Pass,24,thrown 7 yds R,Sim pressure,6,Even,#07,,7375729
+2026,2026-10-24,Cornell,3,11:39,2nd,5,our 35,Pass,25,thrown 18 yds L,4-man rush,7,Even,#23,,7377912
+2026,2026-10-24,Cornell,3,03:40,1st,10,our 48,Pass,36,thrown 18 yds M,4-man rush,5,Even,#10,,7379228
+2026,2026-10-24,Cornell,3,02:11,1st,10,their 39,Run,24,Power · JET SWEEP RIGHT,,6,Even,,#10,7379518
+2026,2026-10-31,Penn,2,03:48,1st,10,their 35,Run,10,Inside zone · LG,,6,Even,,#32,7419408
+2026,2026-10-31,Penn,3,00:10,3rd,10,their 48,Pass,23,thrown 8 yds M,5-man blitz,5,Odd,#05,,7424113
+2026,2026-10-31,Penn,4,02:56,2nd,5,their 42,Pass,26,thrown 16 yds M,4-man rush,6,Under,#21,#06,7427321
+2026,2026-10-31,Penn,4,01:22,4th,11,our 33,Pass,27,thrown 27 yds L,3-man rush,6,Odd,#29,,7427970
+2026,2026-10-31,Penn,4,00:59,4th,20,our 20,Pass,20,thrown 29 yds R,3-man rush,5,Odd,#27,#00,7428432

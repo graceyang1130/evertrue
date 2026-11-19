@@ -332,19 +332,22 @@ def plot_finishes(winners: pd.DataFrame, stem: str) -> None:
     plt.close(fig)
 
 
-def five_percentile_table(winners: pd.DataFrame) -> pd.DataFrame:
+def five_percentile_table(winners: pd.DataFrame, population_key: str | None = None) -> pd.DataFrame:
     """Observed clock cutoffs for each additional 5% of winning drives."""
     result = pd.DataFrame({"percentile": range(5, 101, 5)})
-    for name, frame in [("all", winners), ("fcs", winners[winners.fcs])]:
+    groups = ([(population_key, winners)] if population_key is not None
+              else [("all", winners), ("fcs", winners[winners.fcs])])
+    for name, frame in groups:
         seconds = [percentile(frame.to_score_snap_seconds, p / 100) for p in result.percentile]
         result[f"{name}_seconds"] = seconds
         result[f"{name}_m_ss"] = [fmt(value) for value in seconds]
     return result
 
 
-def plot_percentile_steps(winners: pd.DataFrame, stem: str, window: int | None) -> pd.DataFrame:
+def plot_percentile_steps(winners: pd.DataFrame, stem: str, window: int | None,
+                          population: str | None = None) -> pd.DataFrame:
     navy, rust = "#193a59", "#bb6338"
-    ranks = five_percentile_table(winners)
+    ranks = five_percentile_table(winners, "population" if population else None)
     fig = plt.figure(figsize=(14, 9.5), facecolor="white")
     fig.text(.07, .945, "Winning-drive clock used: every 5th percentile",
              fontsize=22, weight="bold", color=navy)
@@ -354,13 +357,15 @@ def plot_percentile_steps(winners: pd.DataFrame, stem: str, window: int | None) 
     grid = fig.add_gridspec(1, 2, left=.07, right=.96, top=.81, bottom=.255,
                             width_ratios=[1.9, 1], wspace=.22)
     ax = fig.add_subplot(grid[0, 0])
-    for label, column, color, style in [
+    series = ([(f"{population} (n={len(winners):,})", "population_seconds", navy, "-")]
+              if population else [
         (f"All offenses (n={len(winners):,})", "all_seconds", navy, "-"),
         (f"FCS offenses (n={int(winners.fcs.sum()):,})", "fcs_seconds", rust, "--"),
-    ]:
+    ])
+    for label, column, color, style in series:
         ax.plot(ranks.percentile, ranks[column], color=color, linestyle=style,
                 marker="o", markersize=4, linewidth=2, label=label)
-    ymax = max(60, int(np.ceil(ranks[["all_seconds", "fcs_seconds"]].max().max() / 60)) * 60)
+    ymax = max(60, int(np.ceil(ranks[[s[1] for s in series]].max().max() / 60)) * 60)
     ax.set_xlim(3, 102)
     ax.set_ylim(0, ymax + 15)
     ax.set_xticks(range(5, 101, 5), [f"{p}%" for p in range(5, 101, 5)], rotation=55)
@@ -380,9 +385,14 @@ def plot_percentile_steps(winners: pd.DataFrame, stem: str, window: int | None) 
     tax.axis("off")
     tax.set_title("Clock used at every 5th percentile", loc="left", color=navy,
                   weight="bold", fontsize=12, pad=14)
-    cells = [[f"{r.percentile}%", r.all_m_ss, r.fcs_m_ss] for r in ranks.itertuples()]
-    table = tax.table(cellText=cells, colLabels=["Percentile", "All offenses", "FCS"],
-                      cellLoc="center", bbox=[0, 0, 1, 1], colWidths=[.34, .36, .3])
+    if population:
+        cells = [[f"{r.percentile}%", r.population_m_ss] for r in ranks.itertuples()]
+        headers, widths = ["Percentile", "Ivy offenses"], [.45, .55]
+    else:
+        cells = [[f"{r.percentile}%", r.all_m_ss, r.fcs_m_ss] for r in ranks.itertuples()]
+        headers, widths = ["Percentile", "All offenses", "FCS"], [.34, .36, .3]
+    table = tax.table(cellText=cells, colLabels=headers,
+                      cellLoc="center", bbox=[0, 0, 1, 1], colWidths=widths)
     table.auto_set_font_size(False)
     table.set_fontsize(10)
     for (row, col), cell in table.get_celld().items():
@@ -398,12 +408,16 @@ def plot_percentile_steps(winners: pd.DataFrame, stem: str, window: int | None) 
         elif row % 2 == 0:
             cell.set_facecolor("#f7f9fb")
     p75 = ranks[ranks.percentile.eq(75)].iloc[0]
-    fig.text(.07, .132,
-             f"Read 75% as: at least 75% of these winning drives reached the scoring snap within {p75.all_m_ss} overall / {p75.fcs_m_ss} for FCS.",
+    example = (f"Read 75% as: at least 75% of these Ivy winning drives reached the scoring snap within {p75.population_m_ss}."
+               if population else f"Read 75% as: at least 75% of these winning drives reached the scoring snap within {p75.all_m_ss} overall / {p75.fcs_m_ss} for FCS.")
+    fig.text(.07, .132, example,
              fontsize=10, color=navy)
-    fig.text(.07, .098, "Percentiles describe observed wins, not scoring probabilities. The 100th percentile is the sample maximum.",
+    fig.text(.07, .098,
+             (f"Small sample: {len(winners)} drives. Adjacent 5% cutoffs can repeat. The 100th percentile is the observed maximum."
+              if population else "Percentiles describe observed wins, not scoring probabilities. The 100th percentile is the sample maximum."),
              fontsize=9, color="#536370")
-    fig.text(.07, .068, "Timing: first scrimmage snap to TD or made-FG snap; FG setup included, final play duration excluded. FCS is a subset of all offenses.",
+    fig.text(.07, .068, "Timing: first scrimmage snap to TD or made-FG snap; FG setup included, final play duration excluded."
+             + (" Ivy offense vs any opponent." if population else " FCS is a subset of all offenses."),
              fontsize=9, color="#536370")
     fig.text(.07, .038, "Source: local PFF feed, 2023-2026 through week 4. Cutoffs use observed ranks. Lines connect the 5% markers as a visual guide.",
              fontsize=9, color="#536370")

@@ -1,0 +1,16 @@
+heading,situation,snaps,passes,pass_pct,blitz_pct,yards_per_play,success_pct
+Field position,Backed up (their 1-19),42,25,59.5,28.0,5.1,52.4
+Field position,Their 20 to their 49,251,153,61.0,15.7,4.9,46.5
+Field position,Midfield to our 21,169,97,57.4,15.5,5.4,47.0
+Field position,Red zone (our 11-20),34,19,55.9,15.8,3.5,35.5
+Field position,Goal line (our 10 and in),28,19,67.9,31.6,1.5,29.6
+Score,We lead by 9+,171,123,71.9,13.0,5.0,49.7
+Score,We lead by 1-8,60,34,56.7,17.6,5.0,42.1
+Score,Tied,116,55,47.4,14.5,4.7,42.5
+Score,We trail by 1-8,86,51,59.3,25.5,4.7,45.9
+Score,We trail by 9+,91,50,54.9,24.0,4.3,43.7
+Clock,Their two-minute drill,39,36,92.3,0.0,7.2,48.6
+Clock,They're killing the clock,14,3,21.4,100.0,3.5,28.6
+Clock,Rest of the game,471,274,58.2,19.0,4.6,45.9
+Offense's pace,They go tempo,82,44,53.7,11.4,6.8,64.1
+Offense's pace,Normal pace,442,269,60.9,18.6,4.4,42.2

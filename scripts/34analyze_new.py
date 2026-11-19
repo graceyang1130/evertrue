@@ -12,6 +12,13 @@ Per side (offense, defense) and per down (3, 4):
   - conversion rate (bucketed)        -- the old %success_category chart,
     relabelled from "Success" to "Conversion".
 
+Ivy reference ticks compare pass/run call share on the combined charts and
+pass/run conversion rate on the bucketed charts. Combined charts also show
+Ivy conversion diamonds scaled to the team's call share and an aligned strip
+of explicit team / Ivy conversion percentages; scrambles have no reference.
+References pool all plays in the Ivy exports (independent of the team's season
+filters). Override the default exports with --ivy-offense-csv and --ivy-defense-csv.
+
 Generic version: pass CSV paths and a school name instead of editing the file.
 This replaces the per-opponent copies (yale_breakdown.py, dartmouth_breakdown.py,
 better34analysis.py, ...) which were identical apart from three lines.
@@ -30,6 +37,8 @@ plays negated by penalty (pff_NOPLAY) and garbage-time plays are both kept in.
 
 import argparse
 import os
+import re
+from pathlib import Path
 
 import matplotlib
 import numpy as np
@@ -49,6 +58,10 @@ RUN_COLOR = "green"
 SCRAMBLE_COLOR = "orange"
 
 DISTANCE_CATEGORIES = ["1-2", "3-6", "7-10", "11+"]
+
+IVY_DATA_DIR = Path(__file__).resolve().parents[1] / "3rd_4th_down" / "2025" / "Ivy Averages"
+IVY_OFFENSE_PATH = IVY_DATA_DIR / "ivy_offense.csv"
+IVY_DEFENSE_PATH = IVY_DATA_DIR / "ivy_defense.csv"
 
 
 def _tint(color, amount=0.62):
@@ -146,7 +159,116 @@ def _split_plays(df, desired_down):
     return plays, pass_plays, run_plays, scramble_plays
 
 
-def play_mix_and_conversion(df, desired_down, school="Brown offense", out_dir=".", show=False):
+def _ivy_benchmarks(ivy_df, desired_down, bucketed=False):
+    """Pooled pass/run shares and conversions, with NaN for absent samples.
+
+    Call shares use pass + run + scramble as the denominator, matching the
+    team bars. Special teams are excluded; scrambles get no benchmark series.
+    """
+    plays = ivy_df[ivy_df["pff_DOWN"] == desired_down].copy()
+    if bucketed:
+        plays["distance_category"] = pd.cut(
+            plays["pff_DISTANCE"], bins=[0, 2, 6, 10, np.inf],
+            labels=DISTANCE_CATEGORIES, right=True, include_lowest=True,
+        )
+        bins = DISTANCE_CATEGORIES
+    else:
+        bins = list(range(1, 15)) + ["15+"]
+
+    shares = {"pass": [], "run": []}
+    conversions = {"pass": [], "run": []}
+    for distance in bins:
+        if bucketed:
+            sel = plays[plays["distance_category"] == distance]
+        elif distance == "15+":
+            sel = plays[plays["pff_DISTANCE"] >= 15]
+        else:
+            sel = plays[plays["pff_DISTANCE"] == distance]
+        _, p, r, s = _split_plays(sel, desired_down)
+        total = len(p) + len(r) + len(s)
+        for key, frame in (("pass", p), ("run", r)):
+            shares[key].append(len(frame) / total * 100 if total else np.nan)
+            conversions[key].append(
+                (frame["pff_FIRST_DOWN_GAINED"] == 1).mean() if len(frame) else np.nan
+            )
+    return shares, conversions
+
+
+def _draw_ivy_ticks(ax, centers, values, bar_width, label, label_pad):
+    """Short, outlined ticks across pass/run bars; return one legend handle."""
+    import matplotlib.patheffects as pe
+
+    handle = None
+    for key in ("pass", "run"):
+        for x, value in zip(centers[key], values[key]):
+            if not np.isfinite(value):
+                continue
+            line, = ax.plot(
+                [x - bar_width * 0.44, x + bar_width * 0.44], [value, value],
+                color="#2d2d2d", linewidth=2.5, solid_capstyle="round",
+                label=label if handle is None else "_nolegend_", zorder=5,
+                path_effects=[pe.withStroke(linewidth=4.5, foreground="white")],
+            )
+            if handle is None:
+                handle = line
+            # Keep count labels readable when a reference sits near a bar top.
+            for text in ax.texts:
+                tx, ty = text.get_position()
+                if (text.get_va() == "bottom" and np.isclose(tx, x)
+                        and abs(ty - value) <= label_pad):
+                    text.set_y(value + label_pad)
+    return handle
+
+
+def _draw_ivy_conversion_markers(ax, centers, shares, counts, ivy_rates, bar_width, team_name):
+    """Mark the expected solid-fill boundary at Ivy conversion, holding team mix fixed."""
+    from matplotlib.lines import Line2D
+
+    style = dict(marker="D", markersize=5, markerfacecolor="white",
+                 markeredgecolor="#2d2d2d", markeredgewidth=1.3, linestyle="none")
+    for key in ("pass", "run"):
+        for x, share, count, rate in zip(centers[key], shares[key], counts[key], ivy_rates[key]):
+            if count and np.isfinite(rate):
+                # Offset toward the bar's edge to keep converted-count labels readable.
+                ax.plot(x + bar_width * .30, share * rate, zorder=6, **style)
+    return Line2D([], [], label=f"Ivy conversion at {team_name} mix", **style)
+
+
+def _draw_conversion_strip(ax, centers, team_rates, ivy_rates, school, team_name):
+    """Separate explicit conversion percentages from the plot's call-share axis."""
+    fig = ax.figure
+    fig.set_size_inches(13, 8.7)
+    fig.subplots_adjust(left=.065, right=.985, bottom=.26, top=.89)
+    strip = fig.add_axes([.065, .035, .92, .105])
+    strip.set_xlim(ax.get_xlim())
+    strip.set_ylim(0, 2)
+    strip.set_axis_off()
+    fig.text(.065, .165, _conversion_label(school).upper(), fontsize=9,
+             fontweight="bold", color="#222222")
+    fig.text(.265, .165, f"{team_name} / Ivy  ·  converted ÷ calls within each play type",
+             fontsize=8.5, color="#555555")
+    for i, center in enumerate(centers):
+        if i % 2 == 0:
+            strip.axvspan(center - .5, center + .5, color="#f3f3f3", zorder=0)
+    strip.axhline(1, color="#dddddd", linewidth=.6)
+    for key, y, color in (("pass", 1.5, PASS_COLOR), ("run", .5, RUN_COLOR)):
+        strip.text(-.016, y / 2, key.title(), transform=strip.transAxes,
+                   ha="right", va="center", fontsize=8, color=color, fontweight="bold")
+        for x, team_rate, ivy_rate in zip(centers, team_rates[key], ivy_rates[key]):
+            # NaN means no sample; preserve genuine zero conversion as 0%.
+            team_text = f"{team_rate:.0%}" if np.isfinite(team_rate) else "—"
+            ivy_text = f"{ivy_rate:.0%}" if np.isfinite(ivy_rate) else "—"
+            strip.text(x - .045, y, team_text, ha="right", va="center",
+                       fontsize=7.7, fontweight="bold", color="#222222")
+            strip.text(x, y, "/", ha="center", va="center", fontsize=7.7, color="#999999")
+            strip.text(x + .045, y, ivy_text, ha="left", va="center",
+                       fontsize=7.7, color="#666666")
+    fig.text(.065, .009, "— = no calls in that sample. Rates rounded to whole percentages.",
+             fontsize=7, color="#666666")
+
+
+def play_mix_and_conversion(df, desired_down, school="Brown offense", out_dir=".", show=False,
+                            ivy_df=None):
     """
     One chart carrying all three numbers, per distance 1-14 and 15+:
 
@@ -157,6 +279,8 @@ def play_mix_and_conversion(df, desired_down, school="Brown offense", out_dir=".
     Layout matches the old %plays chart: pass with scramble stacked on top,
     run beside it. Each segment is split into the part that converted (solid)
     and the part that did not (tinted), separated by a thin white gap.
+    With Ivy data, diamonds mark the expected solid boundary at Ivy conversion;
+    a separate strip lists team / Ivy conversion rates for pass and run.
     """
     import matplotlib.pyplot as plt
     from matplotlib.patches import Patch
@@ -256,22 +380,46 @@ def play_mix_and_conversion(df, desired_down, school="Brown offense", out_dir=".
         Patch(facecolor="#6b6b6b", label="Converted (solid)"),
         Patch(facecolor=_tint("#6b6b6b"), label="Not converted (faded)"),
     ]
+    if ivy_df is not None:
+        ivy_shares, ivy_rates = _ivy_benchmarks(ivy_df, desired_down)
+        team_name = re.split(r"\s+(?:offense|defense)\b", school, maxsplit=1, flags=re.I)[0]
+        centers = {"pass": x, "run": x + bar_width}
+        reference = _draw_ivy_ticks(
+            plt.gca(), centers, ivy_shares,
+            bar_width, "Ivy avg call share (pass/run)", label_pad=2,
+        )
+        if reference is not None:
+            handles.append(reference)
+        handles.append(_draw_ivy_conversion_markers(
+            plt.gca(), centers, pct, counts, ivy_rates, bar_width, team_name,
+        ))
 
     plt.xlabel("Distance (Yards)")
     plt.ylabel("Percentage of Calls (%)")
     plt.ylim(0, 108)  # headroom for labels over a 100% stack
     verb = "Allowed " if "defense" in school.lower() else ""
-    plt.title(f"{school} Down #{desired_down}: Play Mix & Conversion {verb}by Distance", pad=42)
+    plt.title(f"{school} Down #{desired_down}: Play Mix & Conversion {verb}by Distance",
+              pad=48 if ivy_df is not None else 42)
     plt.xticks(x + bar_width / 2, distance_bins)
-    plt.legend(handles=handles, ncol=5, fontsize=9, loc="lower center",
+    plt.legend(handles=handles, ncol=4 if ivy_df is not None else 5,
+               fontsize=8.5 if ivy_df is not None else 9, loc="lower center",
                bbox_to_anchor=(0.5, 1.02), frameon=False)
     plt.grid(axis="y", alpha=0.3)
     plt.gca().set_axisbelow(True)
 
-    _save(f"{school}_{desired_down}_mix_conversion.png", out_dir, show)
+    if ivy_df is not None:
+        team_rates = {
+            key: [converted[key][i] / n if n else np.nan for i, n in enumerate(counts[key])]
+            for key in ("pass", "run")
+        }
+        _draw_conversion_strip(plt.gca(), x + bar_width / 2, team_rates, ivy_rates, school, team_name)
+
+    # The conversion strip uses explicit axes positions, so retain its layout.
+    _save(f"{school}_{desired_down}_mix_conversion.png", out_dir, show, tight=ivy_df is None)
 
 
-def conversion_by_distance_category(df, desired_down, school="Brown offense", out_dir=".", show=False):
+def conversion_by_distance_category(df, desired_down, school="Brown offense", out_dir=".", show=False,
+                                    ivy_df=None):
     """Conversion rate on a true 0-100% axis, bucketed into 1-2 / 3-6 / 7-10 / 11+."""
     import matplotlib.pyplot as plt
 
@@ -318,6 +466,13 @@ def conversion_by_distance_category(df, desired_down, school="Brown offense", ou
     _label_bars(run_bars, counts_run, 0.02)
     _label_bars(scramble_bars, counts_scramble, 0.02)
 
+    if ivy_df is not None:
+        _, ivy_conversions = _ivy_benchmarks(ivy_df, desired_down, bucketed=True)
+        _draw_ivy_ticks(
+            plt.gca(), {"pass": index, "run": index + bar_width}, ivy_conversions,
+            bar_width, "Ivy avg conversion (pass/run)", label_pad=0.02,
+        )
+
     plt.xlabel("Distance Category")
     plt.ylabel(_conversion_label(school))
     plt.title(f"{school} Down #{desired_down}: {_conversion_label(school)} by Distance Category")
@@ -354,6 +509,8 @@ def run_all_plots(
     min_season=None,
     recent_years=None,
     show=False,
+    ivy_offense_csv=IVY_OFFENSE_PATH,
+    ivy_defense_csv=IVY_DEFENSE_PATH,
 ):
     """
     Generate the 3rd/4th down packet for one team: 8 charts.
@@ -371,15 +528,18 @@ def run_all_plots(
     o_clean = clean_data(offense_raw)
     d_clean = clean_data(defense_raw)
 
+    ivy_o = clean_data(pd.read_csv(ivy_offense_csv, usecols=REQUIRED_COLUMNS, low_memory=False))
+    ivy_d = clean_data(pd.read_csv(ivy_defense_csv, usecols=REQUIRED_COLUMNS, low_memory=False))
+
     print_summary(f"{school_name} - OFFENSE", offense_raw, o_clean)
     print_summary(f"{school_name} - DEFENSE", defense_raw, d_clean)
     print()
 
-    for clean, side_name in ((o_clean, "offense"), (d_clean, "defense")):
+    for clean, side_name, ivy in ((o_clean, "offense", ivy_o), (d_clean, "defense", ivy_d)):
         side = f"{school_name} {side_name}"
         for down in (3, 4):
-            play_mix_and_conversion(clean, down, side, out_dir, show)
-            conversion_by_distance_category(clean, down, side, out_dir, show)
+            play_mix_and_conversion(clean, down, side, out_dir, show, ivy_df=ivy)
+            conversion_by_distance_category(clean, down, side, out_dir, show, ivy_df=ivy)
 
 
 def main():
@@ -393,6 +553,10 @@ def main():
     parser.add_argument("--min-season", type=int, default=None, help="Keep seasons >= this year")
     parser.add_argument("--recent-years", type=int, default=None, help="Keep the last N seasons in the file")
     parser.add_argument("--show", action="store_true", help="Open each chart in a window as it is made")
+    parser.add_argument("--ivy-offense-csv", default=IVY_OFFENSE_PATH,
+                        help="Ivy offense reference export (default: repository Ivy Averages file)")
+    parser.add_argument("--ivy-defense-csv", default=IVY_DEFENSE_PATH,
+                        help="Ivy defense reference export (default: repository Ivy Averages file)")
     args = parser.parse_args()
 
     if not args.show:
@@ -406,6 +570,8 @@ def main():
         min_season=args.min_season,
         recent_years=args.recent_years,
         show=args.show,
+        ivy_offense_csv=args.ivy_offense_csv,
+        ivy_defense_csv=args.ivy_defense_csv,
     )
 
 

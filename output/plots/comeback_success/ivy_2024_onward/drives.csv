@@ -1,0 +1,109 @@
+pff_GAMEID,season,offense,defense,state,margin,secs,secs_at_last_snap,yards_to_goal,timeouts,end,got_score,won,scored_then_lost,overtime,ivy
+27576,2024,CTYA,MAHC,Tied,0,883,806,57,3,PUNT,False,True,False,False,True
+27576,2024,CTYA,MAHC,Tied,0,694,586,46,3,PUNT,False,True,False,False,True
+27576,2024,CTYA,MAHC,Tied,0,481,398,21,3,TOUCHDOWN,True,True,False,False,True
+27576,2024,CTYA,MAHC,Tied,0,210,16,64,2,TOUCHDOWN,True,True,False,False,True
+27599,2024,PAUN,DEUN,Down 4-8,-5,765,719,75,2,PUNT,False,False,False,False,True
+27599,2024,PAUN,DEUN,Down 4-8,-5,611,367,28,2,TOUCHDOWN,True,False,True,False,True
+27599,2024,PAUN,DEUN,Down 4-8,-7,104,93,75,1,INTERCEPTION,False,False,False,False,True
+27619,2024,NYCL,DCGT,Down 1-3,-3,70,44,75,3,INTERCEPTION,False,False,False,False,True
+27619,2024,NYCL,DCGT,Down 1-3,-3,10,4,71,0,END OF GAME,False,False,False,False,True
+27623,2024,NHDA,MAMK,Down 4-8,-4,791,484,68,3,FIELD GOAL,False,True,False,False,True
+27623,2024,NHDA,MAMK,Down 1-3,-1,179,16,75,3,FIELD GOAL,True,True,False,False,True
+27654,2024,RIBR,MAHA,Down 4-8,-5,145,110,90,3,DOWNS,False,True,False,False,True
+27654,2024,RIBR,MAHA,Down 4-8,-5,28,28,27,1,TOUCHDOWN,True,True,False,False,True
+27654,2024,MAHA,RIBR,Down 1-3,-3,21,7,75,3,END OF GAME,False,False,False,False,True
+27672,2024,CTYA,CTCE,Down 4-8,-5,685,649,75,3,PUNT,False,True,False,False,True
+27672,2024,CTYA,CTCE,Down 4-8,-5,564,499,30,3,TOUCHDOWN,True,True,False,False,True
+27673,2024,RIBR,RIBT,Down 4-8,-6,853,771,77,3,TOUCHDOWN,True,False,True,False,True
+27673,2024,RIBR,RIBT,Down 4-8,-7,650,583,75,3,DOWNS,False,False,False,False,True
+27673,2024,RIBR,RIBT,Down 4-8,-7,517,283,98,3,TOUCHDOWN,True,False,True,False,True
+27673,2024,RIBR,RIBT,Down 4-8,-7,105,16,75,3,FUMBLE,False,False,False,False,True
+27683,2024,NYCN,NYAB,Down 4-8,-6,795,670,72,3,PUNT,False,False,False,False,True
+27702,2024,PAUN,NHDA,Down 4-8,-6,894,649,75,3,FIELD GOAL,False,False,False,False,True
+27702,2024,PAUN,NHDA,Down 1-3,-3,11,4,99,0,END OF GAME,False,False,False,False,True
+27730,2024,NHDA,CTYA,Down 4-8,-7,200,90,71,0,TOUCHDOWN,True,True,False,True,True
+27730,2024,CTYA,NHDA,Tied,0,82,16,75,2,MISSED FG,False,False,False,True,True
+27730,2024,NHDA,CTYA,Tied,0,3,3,72,0,END OF HALF,False,True,False,True,True
+27738,2024,RIBR,RIUN,Down 1-3,-3,742,579,75,3,MISSED FG,False,False,False,False,True
+27785,2024,RIBR,NJPR,Down 4-8,-8,789,548,80,3,FIELD GOAL,False,False,False,False,True
+27785,2024,RIBR,NJPR,Down 4-8,-5,437,359,51,3,FUMBLE,False,False,False,False,True
+27789,2024,MAHA,MAHC,Down 1-3,-1,104,50,75,0,TOUCHDOWN,True,True,False,False,True
+27817,2024,NHDA,CTCE,Down 1-3,-3,754,651,75,3,FUMBLE,False,True,False,False,True
+27817,2024,NHDA,CTCE,Down 1-3,-3,546,317,32,3,TOUCHDOWN,True,True,False,False,True
+27822,2024,PAUN,NYCL,Down 4-8,-6,14,3,80,0,END OF GAME,False,False,False,False,True
+27845,2024,RIBR,NYCN,Down 4-8,-4,638,374,80,3,FIELD GOAL,False,True,False,False,True
+27845,2024,RIBR,NYCN,Down 1-3,-1,225,12,86,3,FIELD GOAL,True,True,False,False,True
+27898,2024,NYCL,CTYA,Down 4-8,-4,508,289,96,3,TOUCHDOWN,True,True,False,False,True
+27898,2024,CTYA,NYCL,Down 1-3,-3,279,117,75,3,INTERCEPTION,False,False,False,False,True
+27914,2024,MAHA,NHDA,Down 1-3,-3,239,35,73,2,TOUCHDOWN,True,True,False,False,True
+27914,2024,NHDA,MAHA,Down 4-8,-4,27,3,70,2,END OF GAME,False,False,False,False,True
+27955,2024,NJPR,NHDA,Down 4-8,-7,162,120,98,3,SAFETY,False,False,False,False,True
+28060,2024,MAHA,PAUN,Down 4-8,-7,725,428,75,3,TOUCHDOWN,True,True,False,False,True
+28060,2024,PAUN,MAHA,Tied,0,413,158,74,3,MISSED FG,False,False,False,False,True
+28060,2024,MAHA,PAUN,Tied,0,120,25,71,3,FIELD GOAL,True,True,False,False,True
+28082,2024,MAHA,CTYA,Down 4-8,-8,333,281,66,3,DOWNS,False,False,False,False,True
+28089,2024,PAUN,NJPR,Down 1-3,-3,636,503,76,3,DOWNS,False,False,False,False,True
+28089,2024,PAUN,NJPR,Down 1-3,-3,409,262,79,3,FUMBLE,False,False,False,False,True
+28122,2024,NYCN,NYCL,Down 4-8,-8,594,503,36,3,INTERCEPTION,False,False,False,False,True
+29777,2025,PAUN,MAST,Tied,0,327,251,64,3,PUNT,False,True,False,False,True
+29777,2025,PAUN,MAST,Tied,0,106,27,63,2,FIELD GOAL,True,True,False,False,True
+29790,2025,NHDA,NHUN,Tied,0,852,614,87,3,TOUCHDOWN,True,True,False,False,True
+29790,2025,NHDA,NHUN,Down 1-3,-1,463,177,75,3,TOUCHDOWN,True,True,False,False,True
+29799,2025,NJPR,CASU,Tied,0,483,474,72,3,PUNT,False,False,False,False,True
+29799,2025,NJPR,CASU,Down 4-8,-7,64,8,75,1,END OF GAME,False,False,False,False,True
+29820,2025,NYCN,NYAB,Down 1-3,-3,601,519,72,3,PUNT,False,False,False,False,True
+29820,2025,NYCN,NYAB,Down 1-3,-3,152,89,70,1,INTERCEPTION,False,False,False,False,True
+29826,2025,NYCN,CTYA,Down 4-8,-6,852,582,84,3,FIELD GOAL,False,False,False,False,True
+29826,2025,NYCN,CTYA,Down 1-3,-3,268,170,83,3,INTERCEPTION,False,False,False,False,True
+29828,2025,PAUN,PALE,Down 1-3,-3,614,614,84,3,INTERCEPTION,False,False,False,False,True
+29858,2025,NHDA,CTCE,Down 1-3,-1,868,779,87,3,PUNT,False,True,False,False,True
+29858,2025,NHDA,CTCE,Down 1-3,-1,578,362,89,3,TOUCHDOWN,True,True,False,False,True
+29858,2025,NHDA,CTCE,Tied,0,58,24,75,2,TOUCHDOWN,True,True,False,False,True
+29878,2025,NYCL,NJPR,Down 4-8,-4,801,754,81,3,PUNT,False,False,False,False,True
+29878,2025,NYCL,NJPR,Down 4-8,-7,552,445,79,3,PUNT,False,False,False,False,True
+29878,2025,NYCL,NJPR,Down 4-8,-7,114,3,90,2,END OF GAME,False,False,False,False,True
+29910,2025,NHDA,PAUN,Down 1-3,-2,898,851,74,3,INTERCEPTION,False,False,False,False,True
+29939,2025,RIBR,RIBT,Down 4-8,-4,658,546,76,3,TOUCHDOWN,True,True,False,False,True
+29976,2025,NHDA,CTYA,Down 1-3,-3,433,265,75,3,TOUCHDOWN,True,True,False,False,True
+29976,2025,CTYA,NHDA,Down 4-8,-4,246,42,70,2,TOUCHDOWN,True,False,True,False,True
+29976,2025,NHDA,CTYA,Down 1-3,-2,37,7,75,3,FIELD GOAL,True,True,False,False,True
+30003,2025,NYCL,PAUN,Down 4-8,-7,716,638,29,2,DOWNS,False,False,False,False,True
+30078,2025,NYCN,RIBR,Down 1-3,-3,104,53,74,0,FIELD GOAL,True,True,False,True,True
+30078,2025,RIBR,NYCN,Tied,0,46,40,75,0,END OF HALF,False,False,False,True,True
+30140,2025,NYCN,NJPR,Down 4-8,-4,809,682,33,3,TOUCHDOWN,True,True,False,False,True
+30140,2025,NJPR,NYCN,Down 1-3,-3,675,540,75,3,PUNT,False,False,False,False,True
+30140,2025,NJPR,NYCN,Down 1-3,-3,108,40,80,1,DOWNS,False,False,False,False,True
+30233,2025,RIBR,NYCL,Down 4-8,-4,784,696,85,3,TOUCHDOWN,True,True,False,False,True
+30233,2025,NYCL,RIBR,Down 1-3,-3,682,533,83,3,PUNT,False,False,False,False,True
+30233,2025,NYCL,RIBR,Down 1-3,-3,333,253,28,3,TOUCHDOWN,True,False,True,False,True
+30233,2025,RIBR,NYCL,Down 4-8,-4,247,120,75,3,TOUCHDOWN,True,True,False,False,True
+30233,2025,NYCL,RIBR,Down 1-3,-3,108,108,74,3,FUMBLE,False,False,False,False,True
+30234,2025,PAUN,MAHA,Down 1-3,-2,158,31,76,0,FIELD GOAL,True,False,True,False,True
+30234,2025,MAHA,PAUN,Down 1-3,-1,22,9,75,1,FIELD GOAL,True,True,False,False,True
+30273,2025,NJPR,CTYA,Down 4-8,-7,759,532,63,3,TOUCHDOWN,True,False,True,False,True
+30273,2025,CTYA,NJPR,Tied,0,526,252,75,3,FIELD GOAL,True,True,False,False,True
+30273,2025,NJPR,CTYA,Down 1-3,-3,230,64,75,3,INTERCEPTION,False,False,False,False,True
+30293,2025,NHDA,RIBR,Tied,0,782,640,75,3,FUMBLE,False,False,False,False,True
+30293,2025,RIBR,NHDA,Tied,0,623,549,64,3,PUNT,False,True,False,False,True
+30293,2025,NHDA,RIBR,Tied,0,494,307,59,3,INTERCEPTION-TD,False,False,False,False,True
+30293,2025,NHDA,RIBR,Down 4-8,-7,290,120,75,3,INTERCEPTION,False,False,False,False,True
+30358,2025,CTYA,OHYO,Down 4-8,-6,177,177,56,3,TOUCHDOWN,True,True,False,False,True
+30379,2025,CTYA,MTST,Down 4-8,-8,60,4,75,0,FUMBLE,False,False,False,False,True
+32105,2026,NYCL,PALF,Tied,0,489,292,75,2,FIELD GOAL,True,True,False,True,True
+32105,2026,NYCL,PALF,Tied,0,63,20,75,1,PUNT,False,True,False,True,True
+32107,2026,NHDA,PALE,Down 4-8,-4,519,152,75,3,DOWNS,False,False,False,False,True
+32107,2026,NHDA,PALE,Down 4-8,-4,98,19,80,2,INTERCEPTION,False,False,False,False,True
+32116,2026,CTYA,MAHC,Tied,0,885,774,65,3,DOWNS,False,True,False,False,True
+32116,2026,CTYA,MAHC,Down 4-8,-7,705,582,63,3,TOUCHDOWN,True,True,False,False,True
+32116,2026,CTYA,MAHC,Tied,0,482,406,93,3,PUNT,False,True,False,False,True
+32116,2026,CTYA,MAHC,Tied,0,289,230,53,3,TOUCHDOWN,True,True,False,False,True
+32140,2026,NJPR,RIBT,Down 4-8,-7,499,269,71,3,PUNT,False,False,False,False,True
+32140,2026,NJPR,RIBT,Down 4-8,-7,110,77,58,3,INTERCEPTION,False,False,False,False,True
+32154,2026,RIBR,MAHA,Down 4-8,-4,115,97,73,2,INTERCEPTION,False,False,False,False,True
+32155,2026,NHDA,NJMO,Tied,0,776,641,75,3,FUMBLE,False,False,False,False,True
+32155,2026,NHDA,NJMO,Tied,0,478,364,89,3,PUNT,False,False,False,False,True
+32155,2026,NHDA,NJMO,Down 1-3,-3,64,8,60,0,MISSED FG,False,False,False,False,True
+32159,2026,NYCL,DCGT,Tied,0,692,315,89,3,INTERCEPTION,False,True,False,True,True
+32159,2026,NYCL,DCGT,Tied,0,201,45,91,2,DOWNS,False,True,False,True,True
+32159,2026,NYCL,DCGT,Tied,0,20,16,57,2,END OF HALF,False,True,False,True,True

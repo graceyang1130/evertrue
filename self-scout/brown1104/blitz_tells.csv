@@ -1,0 +1,24 @@
+heading,look,passes,blitzes,blitz_pct,vs_average,tell
+We press a receiver,Press,45,14,31.1,13.5,True
+We press a receiver,No press,268,41,15.3,-2.3,False
+Players in our box,5 or fewer,64,9,14.1,-3.5,False
+Players in our box,6,190,30,15.8,-1.8,False
+Players in our box,7,47,10,21.3,3.7,False
+Players in our box,8 or more,12,6,50.0,32.4,False
+Deep safeties at the snap,Two deep,192,24,12.5,-5.1,False
+Deep safeties at the snap,One deep,90,22,24.4,6.9,False
+Deep safeties at the snap,None deep,31,9,29.0,11.5,True
+Safety rolled down,Yes,48,7,14.6,-3.0,False
+Safety rolled down,No,265,48,18.1,0.5,False
+Our front,Even,201,29,14.4,-3.1,False
+Our front,Odd,44,8,18.2,0.6,False
+Our front,Under,44,11,25.0,7.4,False
+Our front,Other fronts,24,7,29.2,11.6,False
+Their formation,2x2,144,31,21.5,4.0,False
+Their formation,Trips (3x1),126,15,11.9,-5.7,False
+Their formation,Empty,29,8,27.6,10.0,True
+Their formation,Other,14,1,7.1,-10.4,False
+Their personnel,10 personnel,80,17,21.2,3.7,False
+Their personnel,11 personnel,182,27,14.8,-2.7,False
+Their personnel,12 personnel,29,6,20.7,3.1,False
+Their personnel,Other,22,5,22.7,5.2,False

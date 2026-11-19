@@ -1,0 +1,19 @@
+group,carries,yards_per_carry,success_pct,big_runs,view
+Left end,68.0,4.0,48.5,9.0,where the ball went
+Left tackle,36.0,3.8,58.3,4.0,where the ball went
+Left guard,48.0,5.6,58.3,6.0,where the ball went
+Middle left,89.0,3.6,49.4,6.0,where the ball went
+Middle right,77.0,4.2,57.1,8.0,where the ball went
+Right guard,73.0,4.6,57.5,8.0,where the ball went
+Right tackle,29.0,3.8,51.7,2.0,where the ball went
+Right end,79.0,4.1,55.7,7.0,where the ball went
+Inside zone,223.0,4.4,55.2,19.0,run play
+Power,80.0,4.6,58.8,11.0,run play
+Outside zone,80.0,3.0,37.5,8.0,run play
+Man,52.0,4.5,69.2,5.0,run play
+Counter,46.0,4.5,56.5,5.0,run play
+Everything else,46.0,4.8,54.3,10.0,run play
+5 or fewer,31.0,5.8,64.5,5.0,players in our box
+6,203.0,4.8,54.2,23.0,players in our box
+7,225.0,4.0,52.4,25.0,players in our box
+8 or more,67.0,2.9,58.2,5.0,players in our box

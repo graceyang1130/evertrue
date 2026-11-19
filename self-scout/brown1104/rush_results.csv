@@ -1,0 +1,8 @@
+group,rush,dropbacks,pressure_pct,sack_pct,yards,success_pct,big_pct
+No blitz,3-man rush,11,54.5,0.0,7.9,36.4,27.3
+No blitz,4-man rush,191,22.0,6.28,5.3,49.7,5.2
+No blitz,4-man rush + stunt,45,35.6,4.44,6.4,37.8,8.9
+Blitz,Sim pressure,6,33.3,0.0,9.5,50.0,16.7
+Blitz,5-man blitz,41,17.1,0.0,3.9,24.4,7.3
+Blitz,6+ man blitz,6,16.7,0.0,5.5,66.7,0.0
+,All blitzes,53,18.9,0.0,4.7,32.1,7.5
